@@ -1,8 +1,8 @@
 // Load up the discord.js library
 const Discord = require("discord.js");
 
-// Load library for formatting dates and times
-const dateFormat = require('dateformat');
+// Load library for manipulating dates and times
+const moment = require('moment');
 
 // This is your client. Some people call it `bot`, some people call it `self`, 
 // some might call it `cootchie`. Either way, when you see `client.something`, or `bot.something`,
@@ -14,12 +14,12 @@ const config = require("./config.json");
 // config.token contains the bot's token
 // config.prefix contains the message prefix.
 
-const gymHuntrbotTag = "ryly#4813";
-const gymHuntrbotChannel = "huntrbot"
+const gymHuntrbotChannel = "huntrbot";
+const gymHuntrbotName = "GymHuntrBot";
 
-const pokemonToTrack = ['Lugia', 'Articuno', 'Zapdos', 'Moltres'];
+const pokemonToTrack = ['lugia', 'articuno', 'zapdos', 'moltres', 'lapras', 'arcanine'];
 const maxPokemonNameLength = 12;
-const maxLocNameLength = 26;
+const maxLocNameLength = 19;
 
 client.on("ready", () => {
   // This event will run if the bot starts, and logs in, successfully.
@@ -46,7 +46,7 @@ client.on("message", async message => {
   // This event will run on every single message received, from any channel or DM.
   
   // if gymhuntrbot posts in the huntrbot channel, process it here
-  if(message.author.tag === gymHuntrbotTag && message.channel.name === gymHuntrbotChannel) {
+  /*if(message.author.tag === gymHuntrbotTag && message.channel.name === gymHuntrbotChannel) {
     message.channel.send("hello");
     var msg = message.embeds[0];
     message.channel.send(msg.title);
@@ -58,7 +58,7 @@ client.on("message", async message => {
     // extract the pokemon name
     var pokemonName = parts[3].match(/[^\r\n]+/g)[1];
     // if pokemon name is not a selected one, return
-    if !pokemonToTrack.find(pokemonName) return;
+    if(!pokemonToTrack.find(pokemonName)) return;
 
     pokemonName = pokemonName.substring(0, maxPokemonNameLength);
     message.channel.send(pokemonName);
@@ -85,7 +85,7 @@ client.on("message", async message => {
       .catch(error => message.reply(`Sorry ${message.author}, I couldn't create channel ${args[0]} because of : ${error}`));
       
     return;
-  }
+  }*/
   
   // It's good practice to ignore other bots. This also makes your bot ignore itself
   // and not get into a spam loop (we call that "botception").
@@ -169,8 +169,9 @@ client.on("message", async message => {
     message.reply(`${member.user.tag} has been banned by ${message.author.tag} because: ${reason}`);
   }
   
-  /*if(command === "purge") {
+  if(command === "purge") {
     // This command removes all messages from all users in the channel, up to 100.
+    // First message is the purge command.
     
     // get the delete count, as an actual number.
     const deleteCount = parseInt(args[0], 10);
@@ -179,11 +180,10 @@ client.on("message", async message => {
     if(!deleteCount || deleteCount < 2 || deleteCount > 100)
       return message.reply("Please provide a number between 2 and 100 for the number of messages to delete");
     
-    // So we get our messages, and delete them. Simple enough, right?
-    const fetched = await message.channel.fetchMessages({count: deleteCount});
-    message.channel.bulkDelete(fetched)
+    // delete the specified number of messages, newest first. 
+    message.channel.bulkDelete(deleteCount)
       .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
-  }*/
+  }
   
   /*if(command === "createchannel") {
     await message.guild.createChannel(args[0], "text")
@@ -195,53 +195,123 @@ client.on("message", async message => {
     var channels = message.guild.channels;
     var ch = channels.find('name', args[0]);
     await ch.delete()
-      .catch(error => message.reply(`Sorry ${message.author} I couldn't delete because of : ${error}`));
+      .catch(error => message.reply(`Sorry ${message.author}, I couldn't delete because of : ${error}`));
     message.reply(`Channel ${args[0]}  has been deleted by ${message.author.tag}`);
   }*/
   
+  // e.g. +raid lugia princeton-stadium 7:49pm
+  if(command === "raid") {
+	  if(args.length != 3)
+		return message.reply(`Sorry, that is the incorrect format. The format for creating a raid channel is "raid pokemonName locationNoSpaces time", e.g. "raid lugia princeton-stadium 7:49pm.`);
+	
+	var pokemonName = args[0];
+	var loc = args[1];
+	var raidTime = args[2];
+	var pokemonNameCap = pokemonName.charAt(0).toUpperCase() + pokemonName.slice(1);
+	var locCap = loc.charAt(0).toUpperCase() + loc.slice(1);
+	
+	if(!pokemonToTrack.includes(pokemonName.toLowerCase()))
+		return message.reply(`Sorry ${message.author}, ${args[0]} is not on my approved pokemon list for raid channel creation.`);
+	
+	
+	var shortPokemonName = pokemonName.substring(0, maxPokemonNameLength).toLowerCase();
+	var shortLoc = loc.substring(0, maxLocNameLength).toLowerCase();
+	var raidTimeStr = raidTime.replace(':', '-');
+	
+	var newChannelName = shortPokemonName + "_" + shortLoc + "_ends_" + raidTimeStr;
+	
+	for(var [key, ch] of message.guild.channels) {
+		if(ch.name == newChannelName) {
+			return message.reply(`Channel <#${ch.id}> already exists.`);
+		}
+	}
+	
+	await message.guild.createChannel(newChannelName, "text")
+	  .then(channel => {
+		  message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonNameCap}** at **${locCap}**! `);
+		  channel.send(`**${pokemonNameCap}** raid has appeared at **${loc}**! You have until **${raidTime}**.\nPlease add a Google Maps link for the gym at ${loc}.`);
+	  })
+      .catch(error => message.reply(`Sorry ${message.author}, I couldn't create channel ${newChannelName} because of : ${error}`));
+	
+	// continuing parsing input
+	// check duplicates
+	
+  }
+  
+  if(command === "deleteraidchannels") {
+    for(var [key, ch] of message.guild.channels) {
+		if(ch.name.startsWith("raid")) {
+			await ch.delete()
+			  .catch(error => message.reply(`Sorry ${message.author}, I couldn't delete because of : ${error}`));
+			message.reply(`Channel ${ch.name}  has been deleted`);
+		}
+	}
+  }
+  
   if(command === "test") {
-    message = channel.fetchMessages({limit: 10})[0]; // TEMP get the first message in the channel (bot)
-    message.channel.send("hello");
-    var msg = message.embeds[0];
-    message.channel.send(msg.title);
-    message.channel.send(msg.description);
-    var descrip = msg.description;
-    // location is parts[1], name and CP is parts[3], time left is parts[5]
-    var parts = descrip.split('"');
+    var gymHuntrbotId = client.users.find('username', gymHuntrbotName).id;
+    message.channel.fetchMessages({limit: 100}).
+		then(messages => {
+			for (var [key, msg] of messages) {
+				if(msg.author.id === gymHuntrbotId) {
+					var pokemonName = msg.embeds[0].description.split('\n')[1].toLowerCase();
     
-    // extract the pokemon name
-    var pokemonName = parts[3].match(/[^\r\n]+/g)[1];
-    // if pokemon name is not a selected one, return
-    if !pokemonToTrack.find(pokemonName) return;
-
-    pokemonName = pokemonName.substring(0, maxPokemonNameLength);
-    message.channel.send(pokemonName);
-    
-    // extract first three words only from location
-    const shortLocRegex = new RegExp('^([\S]+)?\s?([\S]+)?\s?([\S]+)?', 'g');
-    var shortLoc = shortLocRegex.exec(parts[1]).join('-').substring(0, maxLocNameLength);
-    message.channel.send(shortLoc);
-    
-    // extract the time remaining and compute the end time
-    // don't include seconds -- effectively round down
-    const timeRegex = new RegExp('Raid Ending: (\d) hours (\d) min \d sec', 'g');
-    var raidTimeParts = timeRegex.exec(parts[5]);
-    var raidTime = new Date(new Date().getTime() + raidTimeParts[0]*24*60*1000 + raidTimeParts[1]*60*1000);
-    var raidTimeStr = dateFormat(raidTime, 'h:MMtt');
-    message.channel.send(raidTimeStr);
-    
-    // channel name max length is 50
-    var newChannelName = pokemonName + "@" + shortLoc + "_end@" + raidTimeStr;
-    message.channel.send();
-    
-    // TODO mark as temporary channel
-    await message.guild.createChannel(newChannelName, "text")
-      .catch(error => message.reply(`Sorry ${message.author}, I couldn't create channel ${args[0]} because of : ${error}`));
+					// if pokemon name is not a selected one, return
+					if(pokemonToTrack.includes(pokemonName)) {
+						processGymHuntrbotMsg(message, msg);
+						break;
+					}
+				}
+			}
+		});
   }
   
   // TODO delete temporary channel after one hour of inactivity
   
 });
 
+async function processGymHuntrbotMsg(message, lastBotMessage) {
+	var emb = lastBotMessage.embeds[0];
+	var gpsCoords = new RegExp('^.*#(.*)','g').exec(emb.url)[1];
+	var gmapsLink = 'https://www.google.com/maps/search/?api=1&query=' + gpsCoords;
+    var descrip = emb.description;
+    // location name is parts[0], name is parts[1], time left is parts[3]
+    var parts = descrip.split('\n');
+    
+	var pokemonName = parts[1];
+	// TODO use map to convert long pokemon name to short, e.g. ttar
+    var shortPokemonName = pokemonName.substring(0, maxPokemonNameLength).toLowerCase();
+    
+    // extract first two words only from location and get rid of the trailing period
+	var loc = parts[0].replace(/\./g, '').replace(/\*/g, '');
+    const shortLocRegex = new RegExp(/^([\S]+)?\s?([\S]+)?/g);
+    var shortLoc = shortLocRegex.exec(loc)[0].replace(/\s/g, '-').substring(0, maxLocNameLength).toLowerCase();
+    
+    // extract the time remaining and compute the end time
+    // don't include seconds -- effectively round down
+    const timeRegex = new RegExp(/\*Raid Ending: (\d+) hours (\d+) min \d+ sec\*/g);
+    var raidTimeParts = timeRegex.exec(parts[3]);
+    var raidTime = moment(new Date()).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
+	var raidTimeStr = raidTime.format('h-mma');
+	var raidTimeStrColon = raidTime.format('h:mma');
+    
+    // channel name max length is 50
+    var newChannelName = shortPokemonName + "_" + shortLoc + "_ends_" + raidTimeStr;
+	
+	for(var [key, ch] of message.guild.channels) {
+		if(ch.name == newChannelName) {
+			return message.reply("Channel <#${ch.id}> already exists.");
+		}
+	}
+    
+    // TODO mark as temporary channel
+    await message.guild.createChannel(newChannelName, "text")
+	  .then(channel => {
+		  message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonName}** at **${loc}**! `);
+		  channel.send(`**${pokemonName}** raid has appeared at **${loc}**! You have until **${raidTimeStrColon}**.\nGPS coords: **${gpsCoords}**\n${gmapsLink}`);
+	  })
+      .catch(error => message.reply(`Sorry ${message.author}, I couldn't create channel ${newChannelName} because of : ${error}`));
+	
+}
+
 client.login(config.token);
-           
