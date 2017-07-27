@@ -53,7 +53,7 @@ client.on("message", async message => {
   
   // if gymhuntrbot posts in the huntrbot channel, process it here
   var gymHuntrbotId = client.users.find('username', gymHuntrbotName).id;
-  if (message.author.id === gymHuntrbotId && message.channel.name === gymHuntrbotChannel && message.embeds[0]) {
+  if (message.author.bot && message.author.id === gymHuntrbotId && message.channel.name === gymHuntrbotChannel && message.embeds[0]) {
     var pokemonName = message.embeds[0].description.split('\n')[1].toLowerCase();
     // only create a channel if the pokemon is approved
     if (approvedPokemon.includes(pokemonName)) {
@@ -96,7 +96,7 @@ client.on("message", async message => {
   }
   
   if (command === "purge") {
-    if (!checkPermissionsManageChannel(message)) return false;
+    if (!checkPermissionsManageChannel(message) || !checkPermissionsManageMessages(message)) return false;
     // This command removes all messages from all users in the channel, up to 100.
     // First message is the purge command.
     
@@ -129,7 +129,7 @@ client.on("message", async message => {
   if (command === "approve") {
     if (!checkPermissionsManageChannel(message)) return false;
     
-      for (var i = 0; i < args.length; i++) {
+    for (var i = 0; i < args.length; i++) {
       if (approvedPokemon.includes(args[i].toLowerCase()))
         message.reply(`${args[i]} is already on my approved pokemon list for raid channel creation.`);
       else {
@@ -236,11 +236,15 @@ client.on('ready', (evt) => {
 });
 
 function checkPermissionsManageChannel(message) {
-  var canManageChannels = false;
-  message.member.roles.forEach(role => {
-    if (role.hasPermission('MANAGE_CHANNELS')) canManageChannels = true;
-  });
-  if (!canManageChannels) {
+  if (!message.channel.permissionsFor(message.member).has('MANAGE_CHANNELS')) {
+    message.reply(`Sorry, you do not have permission to do this.`);
+    return false;
+  }
+  return true;
+}
+
+function checkPermissionsManageMessages(message) {
+  if (!message.channel.permissionsFor(message.member).has('MANAGE_MESSAGES')) {
     message.reply(`Sorry, you do not have permission to do this.`);
     return false;
   }
@@ -260,7 +264,7 @@ async function checkRaidChannels() {
             if (lastMsgDate.isBefore(moment().subtract(raidChannelMaxInactivity, 'minutes'))) {
               console.log(`Deleting raid channel ${ch.id}: ${ch.name} due to inactivity.`);
               ch.delete()
-                .catch(error => console.log(`I couldn't delete raid channel ${ch.id}: ${ch.name} because of : ${error}`));
+                  .catch(error => console.log(`I couldn't delete raid channel ${ch.id}: ${ch.name} because of : ${error}`));
             }
           }));
     }
