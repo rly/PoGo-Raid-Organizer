@@ -184,10 +184,7 @@ client.on("message", async message => {
     newChannelName = newChannelName.substring(0, maxChannelNameLength - raidChannelSuffix.length) + raidChannelSuffix;
     
     // check for duplicates
-    console.log(newChannelName);
     for (var [key, ch] of message.guild.channels) {
-      console.log(ch.name)
-      console.log(ch.name === newChannelName);
       if (ch.name === newChannelName) {
         console.log(`Tried to create channel ${newChannelName} but it already exists.`);
         return message.reply(`Channel <#${ch.id}> already exists.`);
@@ -197,7 +194,7 @@ client.on("message", async message => {
     // create the channel and write a message
     await message.guild.createChannel(newChannelName, "text")
         .then(channel => {
-          message.channel.send(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonNameCap}** at **${locCap}**! `);
+          message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonNameCap}** at **${locCap}**! `);
           channel.send(`**${pokemonNameCap}** raid has appeared at **${loc}**! You have until **${raidTime}**.\nPlease add a Google Maps link for the gym at ${loc}.`);
           channel.setTopic(`Coordinate a raid versus ${pokemonNameCap} at ${loc}! Ends at ${raidTime}.`);
           console.log(`Created channel <#${channel.id}>.`);
@@ -333,7 +330,7 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   // create the channel and write a message
   await message.guild.createChannel(newChannelName, "text")
       .then(channel => {
-        message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonName}** at **${loc}**!`);
+        message.channel.send(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonName}** at **${loc}**!`);
         channel.send(`**${pokemonName}** raid has appeared at **${loc}**! You have until **${raidTimeStrColon}**.\nGPS coords: **${gpsCoords}**\n${gmapsUrl}`);
         channel.setTopic(`Coordinate a raid versus ${pokemonName} at ${loc}! Ends at ${raidTimeStrColon}.`);
         console.log(`Created channel <#${channel.id}>.`);
