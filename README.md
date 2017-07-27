@@ -34,8 +34,6 @@ Key prefix: `+`
 ## Setup and Deploy
 
 - Currently this runs on a local node.js server.
-- TODO add instructions for hosting locally
-- TODO deploy in cloud and add instructions
 
 ## Pros and Cons
 
@@ -53,6 +51,16 @@ Use of this bot has some disadvantages:
 - Having lots of raid channels can lead to confusion, (but there would be similar confusion if all these raid discussions were in the same channel).
 
 Some of the above disadvantages can be fixed if GymHuntrBot reports raids quickly and accurately.
+
+## TODO
+
+- Implement `+help`.
+- Add static google map using http://staticmapmaker.com/google/ API.
+- Delete automatic raid channel 5 minutes after raid is over.
+- TODO add instructions for hosting locally
+- TODO deploy in cloud and add instructions
+- Allow manual raid channel creation for any pokemon 
+- Add command to purge messages
 
 ## Credits
 
