@@ -27,8 +27,8 @@ Key prefix: `+`
 
 ## Automatic Actions
 
-- Listens to channel (default name: "GymHuntrBot") for raid announcements by the GymHuntrBot (default name: "huntrbot").
-- Deletes inactive raid channels (default inactivity time: 60 min), checking periodically (default: every 2 minutes).
+- Listens to channel (default name: "huntrbot") for raid announcements by the GymHuntrBot.
+- Deletes inactive raid channels (default inactivity time: 2 hours), checking periodically (default: every 5 minutes).
 
 ## Setup and Deploy
 
