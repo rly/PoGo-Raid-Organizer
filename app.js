@@ -210,13 +210,14 @@ client.on("message", async message => {
     if (!checkPermissionsManageChannel(message)) return false;
     
     for (var [key, ch] of message.guild.channels) {
-      if (ch.name.endsWith(raidChannelSuffix)) {
+      if (ch.type === 'text' && ch.name.endsWith(raidChannelSuffix)) {
         await ch.delete()
             .catch(error => {
               message.reply(`Sorry ${message.author}, I couldn't delete ${ch.name} because of : ${error}`);
               console.log(`couldn't delete channel ${ch.name} for ${message.author} because of : ${error}`);
             });
         message.reply(`Channel ${ch.name}  has been deleted`);
+        console.log(`Channel ${ch.name}  has been deleted`);
       }
     }
   }
