@@ -19,12 +19,12 @@ const gymHuntrbotChannel = "huntrbot";
 const gymHuntrbotName = "GymHuntrBot";
 
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
-var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'lapras', 'arcanine']; // lower case
+var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar']; // lower case
 
 const maxPokemonNameLength = 12;
 const maxLocNameLength = 17;
 const raidChannelSuffix = "__";
-const raidChannelCheckInterval = 5 * 60 * 1000; // every 5 minutes
+const raidChannelCheckInterval = 2 * 60 * 1000; // every 2 minutes
 var raidChannelMaxInactivity = 60; // minutes
 
 client.on("ready", () => {
@@ -95,7 +95,7 @@ client.on("message", async message => {
     message.channel.send(sayMessage);
   }
   
-  if (command === "purge") {
+  /*if (command === "purge") {
     if (!checkPermissionsManageChannel(message) || !checkPermissionsManageMessages(message)) return false;
     // This command removes all messages from all users in the channel, up to 100.
     // First message is the purge command.
@@ -110,7 +110,7 @@ client.on("message", async message => {
     // delete the specified number of messages, newest first. 
     message.channel.bulkDelete(deleteCount)
         .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
-  }
+  }*/
   
   /*if (command === "createchannel") {
     await message.guild.createChannel(args[0], "text")
@@ -126,6 +126,7 @@ client.on("message", async message => {
     message.reply(`Channel ${args[0]}  has been deleted by ${message.author.tag}`);
   }*/
   
+  // add a pokemon to the approved list for raid channel creation
   if (command === "approve") {
     if (!checkPermissionsManageChannel(message)) return false;
     
@@ -139,6 +140,7 @@ client.on("message", async message => {
     }
   }
   
+  // remove a pokemon from the approved list for raid channel creation
   if (command === "disapprove") {
     if (!checkPermissionsManageChannel(message)) return false;
   
