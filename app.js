@@ -14,12 +14,18 @@ const config = require("./config.json");
 // config.token contains the bot's token
 // config.prefix contains the message prefix.
 
+// info on GymHuntrBot
 const gymHuntrbotChannel = "huntrbot";
 const gymHuntrbotName = "GymHuntrBot";
 
-const pokemonToTrack = ['lugia', 'articuno', 'zapdos', 'moltres', 'lapras', 'arcanine'];
+// note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
+var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'lapras', 'arcanine']; // lower case
+
 const maxPokemonNameLength = 12;
-const maxLocNameLength = 19;
+const maxLocNameLength = 17;
+const raidChannelSuffix = "__";
+const raidChannelCheckInterval = 5 * 60 * 1000; // every 5 minutes
+var raidChannelMaxInactivity = 60; // minutes
 
 client.on("ready", () => {
   // This event will run if the bot starts, and logs in, successfully.
@@ -46,54 +52,22 @@ client.on("message", async message => {
   // This event will run on every single message received, from any channel or DM.
   
   // if gymhuntrbot posts in the huntrbot channel, process it here
-  /*if(message.author.tag === gymHuntrbotTag && message.channel.name === gymHuntrbotChannel) {
-    message.channel.send("hello");
-    var msg = message.embeds[0];
-    message.channel.send(msg.title);
-    message.channel.send(msg.description);
-    var descrip = msg.description;
-    // location is parts[1], name and CP is parts[3], time left is parts[5]
-    var parts = descrip.split('"');
-    
-    // extract the pokemon name
-    var pokemonName = parts[3].match(/[^\r\n]+/g)[1];
-    // if pokemon name is not a selected one, return
-    if(!pokemonToTrack.find(pokemonName)) return;
-
-    pokemonName = pokemonName.substring(0, maxPokemonNameLength);
-    message.channel.send(pokemonName);
-    
-    // extract first three words only from location
-    const shortLocRegex = new RegExp('^([\S]+)?\s?([\S]+)?\s?([\S]+)?', 'g');
-    var shortLoc = shortLocRegex.exec(parts[1]).join('-').substring(0, maxLocNameLength);
-    message.channel.send(shortLoc);
-    
-    // extract the time remaining and compute the end time
-    // don't include seconds -- effectively round down
-    const timeRegex = new RegExp('Raid Ending: (\d) hours (\d) min \d sec', 'g');
-    var raidTimeParts = timeRegex.exec(parts[5]);
-    var raidTime = new Date(new Date().getTime() + raidTimeParts[0]*24*60*1000 + raidTimeParts[1]*60*1000);
-    var raidTimeStr = dateFormat(raidTime, 'h:MMtt');
-    message.channel.send(raidTimeStr);
-    
-    // channel name max length is 50
-    var newChannelName = pokemonName + "@" + shortLoc + "_end@" + raidTimeStr;
-    message.channel.send();
-    
-    // TODO mark as temporary channel
-    await message.guild.createChannel(newChannelName, "text")
-      .catch(error => message.reply(`Sorry ${message.author}, I couldn't create channel ${args[0]} because of : ${error}`));
-      
-    return;
-  }*/
+  var gymHuntrbotId = client.users.find('username', gymHuntrbotName).id;
+  if (message.author.id === gymHuntrbotId && message.channel.name === gymHuntrbotChannel && message.embeds[0]) {
+    var pokemonName = message.embeds[0].description.split('\n')[1].toLowerCase();
+    // only create a channel if the pokemon is approved
+    if (approvedPokemon.includes(pokemonName)) {
+      processGymHuntrbotMsg(message, message);
+    }
+  }
   
   // It's good practice to ignore other bots. This also makes your bot ignore itself
   // and not get into a spam loop (we call that "botception").
-  if(message.author.bot) return;
+  if (message.author.bot) return;
   
   // Also good practice to ignore any message that does not start with our prefix, 
   // which is set in the configuration file.
-  if(message.content.indexOf(config.prefix) !== 0) return;
+  if (message.content.indexOf(config.prefix) !== 0) return;
   
   // Here we separate our "command" name, and our "arguments" for the command. 
   // e.g. if we have the message "+say Is this the real life?" , we'll get the following:
@@ -104,14 +78,14 @@ client.on("message", async message => {
   
   // Let's go with a few common example commands! Feel free to delete or change those.
   
-  if(command === "ping") {
+  if (command === "ping") {
     // Calculates ping between sending a message and editing it, giving a nice round-trip latency.
     // The second ping is an average latency between the bot and the websocket server (one-way, not round-trip)
     const m = await message.channel.send("Ping?");
     m.edit(`Pong! Latency is ${m.createdTimestamp - message.createdTimestamp}ms. API Latency is ${Math.round(client.ping)}ms`);
   }
   
-  if(command === "say") {
+  if (command === "say") {
     // makes the bot say something and delete the message. As an example, it's open to anyone to use. 
     // To get the "message" itself we join the `args` back into a string with spaces: 
     const sayMessage = args.join(" ");
@@ -121,55 +95,8 @@ client.on("message", async message => {
     message.channel.send(sayMessage);
   }
   
-  if(command === "kick") {
-    // This command must be limited to mods and admins. In this example we just hardcode the role names.
-    // Please read on Array.some() to understand this bit: 
-    // https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Array/some?
-    if(!message.member.roles.some(r=>["Administrator", "Moderator"].includes(r.name)) )
-      return message.reply("Sorry, you don't have permissions to use this!");
-    
-    // Let's first check if we have a member and if we can kick them!
-    // message.mentions.members is a collection of people that have been mentioned, as GuildMembers.
-    let member = message.mentions.members.first();
-    if(!member)
-      return message.reply("Please mention a valid member of this server");
-    if(!member.kickable) 
-      return message.reply("I cannot kick this user! Do they have a higher role? Do I have kick permissions?");
-    
-    // slice(1) removes the first part, which here should be the user mention!
-    let reason = args.slice(1).join(' ');
-    if(!reason)
-      return message.reply("Please indicate a reason for the kick!");
-    
-    // Now, time for a swift kick in the nuts!
-    await member.kick(reason)
-      .catch(error => message.reply(`Sorry ${message.author}, I couldn't kick because of : ${error}`));
-    message.reply(`${member.user.tag} has been kicked by ${message.author.tag} because: ${reason}`);
-
-  }
-  
-  if(command === "ban") {
-    // Most of this command is identical to kick, except that here we'll only let admins do it.
-    // In the real world mods could ban too, but this is just an example, right? ;)
-    if(!message.member.roles.some(r=>["Administrator"].includes(r.name)) )
-      return message.reply("Sorry, you don't have permissions to use this!");
-    
-    let member = message.mentions.members.first();
-    if(!member)
-      return message.reply("Please mention a valid member of this server");
-    if(!member.bannable) 
-      return message.reply("I cannot ban this user! Do they have a higher role? Do I have ban permissions?");
-
-    let reason = args.slice(1).join(' ');
-    if(!reason)
-      return message.reply("Please indicate a reason for the ban!");
-    
-    await member.ban(reason)
-      .catch(error => message.reply(`Sorry ${message.author}, I couldn't ban because of : ${error}`));
-    message.reply(`${member.user.tag} has been banned by ${message.author.tag} because: ${reason}`);
-  }
-  
-  if(command === "purge") {
+  if (command === "purge") {
+    if (!checkPermissionsManageChannel(message)) return false;
     // This command removes all messages from all users in the channel, up to 100.
     // First message is the purge command.
     
@@ -177,21 +104,21 @@ client.on("message", async message => {
     const deleteCount = parseInt(args[0], 10);
     
     // Ooooh nice, combined conditions. <3
-    if(!deleteCount || deleteCount < 2 || deleteCount > 100)
+    if (!deleteCount || deleteCount < 2 || deleteCount > 100)
       return message.reply("Please provide a number between 2 and 100 for the number of messages to delete");
     
     // delete the specified number of messages, newest first. 
     message.channel.bulkDelete(deleteCount)
-      .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
+        .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
   }
   
-  /*if(command === "createchannel") {
+  /*if (command === "createchannel") {
     await message.guild.createChannel(args[0], "text")
       .catch(error => message.reply(`Sorry ${message.author}, I couldn't create channel ${args[0]} because of : ${error}`));
     message.reply(`Channel ${args[0]} has been created by ${message.author.tag}`);
   }
   
-  if(command === "deletechannel") {
+  if (command === "deletechannel") {
     var channels = message.guild.channels;
     var ch = channels.find('name', args[0]);
     await ch.delete()
@@ -199,119 +126,194 @@ client.on("message", async message => {
     message.reply(`Channel ${args[0]}  has been deleted by ${message.author.tag}`);
   }*/
   
-  // e.g. +raid lugia princeton-stadium 7:49pm
-  if(command === "raid") {
-	  if(args.length != 3)
-		return message.reply(`Sorry, that is the incorrect format. The format for creating a raid channel is "raid pokemonName locationNoSpaces time", e.g. "raid lugia princeton-stadium 7:49pm.`);
-	
-	var pokemonName = args[0];
-	var loc = args[1];
-	var raidTime = args[2];
-	var pokemonNameCap = pokemonName.charAt(0).toUpperCase() + pokemonName.slice(1);
-	var locCap = loc.charAt(0).toUpperCase() + loc.slice(1);
-	
-	if(!pokemonToTrack.includes(pokemonName.toLowerCase()))
-		return message.reply(`Sorry ${message.author}, ${args[0]} is not on my approved pokemon list for raid channel creation.`);
-	
-	
-	var shortPokemonName = pokemonName.substring(0, maxPokemonNameLength).toLowerCase();
-	var shortLoc = loc.substring(0, maxLocNameLength).toLowerCase();
-	var raidTimeStr = raidTime.replace(':', '-');
-	
-	var newChannelName = shortPokemonName + "_" + shortLoc + "_ends_" + raidTimeStr;
-	
-	for(var [key, ch] of message.guild.channels) {
-		if(ch.name == newChannelName) {
-			return message.reply(`Channel <#${ch.id}> already exists.`);
-		}
-	}
-	
-	await message.guild.createChannel(newChannelName, "text")
-	  .then(channel => {
-		  message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonNameCap}** at **${locCap}**! `);
-		  channel.send(`**${pokemonNameCap}** raid has appeared at **${loc}**! You have until **${raidTime}**.\nPlease add a Google Maps link for the gym at ${loc}.`);
-	  })
-      .catch(error => message.reply(`Sorry ${message.author}, I couldn't create channel ${newChannelName} because of : ${error}`));
-	
-	// continuing parsing input
-	// check duplicates
-	
-  }
-  
-  if(command === "deleteraidchannels") {
-    for(var [key, ch] of message.guild.channels) {
-		if(ch.name.startsWith("raid")) {
-			await ch.delete()
-			  .catch(error => message.reply(`Sorry ${message.author}, I couldn't delete because of : ${error}`));
-			message.reply(`Channel ${ch.name}  has been deleted`);
-		}
-	}
-  }
-  
-  if(command === "test") {
-    var gymHuntrbotId = client.users.find('username', gymHuntrbotName).id;
-    message.channel.fetchMessages({limit: 100}).
-		then(messages => {
-			for (var [key, msg] of messages) {
-				if(msg.author.id === gymHuntrbotId) {
-					var pokemonName = msg.embeds[0].description.split('\n')[1].toLowerCase();
+  if (command === "approve") {
+    if (!checkPermissionsManageChannel(message)) return false;
     
-					// if pokemon name is not a selected one, return
-					if(pokemonToTrack.includes(pokemonName)) {
-						processGymHuntrbotMsg(message, msg);
-						break;
-					}
-				}
-			}
-		});
+      for (var i = 0; i < args.length; i++) {
+      if (approvedPokemon.includes(args[i].toLowerCase()))
+        message.reply(`${args[i]} is already on my approved pokemon list for raid channel creation.`);
+      else {
+        approvedPokemon.push(args[i].toLowerCase());
+        message.reply(`${args[i]} is now on my approved pokemon list for raid channel creation.`);
+      }
+    }
   }
   
-  // TODO delete temporary channel after one hour of inactivity
+  if (command === "disapprove") {
+    if (!checkPermissionsManageChannel(message)) return false;
   
+    for (var i = 0; i < args.length; i++) {
+      if (!approvedPokemon.includes(args[i].toLowerCase()))
+        message.reply(`${args[i]} is not on my approved pokemon list for raid channel creation.`);
+      else {
+        approvedPokemon.splice(approvedPokemon.indexOf(args[i]), 1);
+        message.reply(`${args[i]} is now off my approved pokemon list for raid channel creation.`);
+      }
+    }
+  }
+  
+  // list all approved pokemon for raid channel creation
+  if (command === "list") {
+    return message.reply(`My approved Pokemon list is: ${approvedPokemon}`);
+  }
+  
+  // e.g. +raid lugia princeton-stadium 7:49pm
+  if (command === "raid") {
+    if (args.length != 3)
+      return message.reply(`Sorry, that is the incorrect format. The format for creating a raid channel is "${config.prefix}raid pokemonName locationNoSpaces time", e.g. "${config.prefix}raid lugia princeton-stadium 7:49pm.`);
+    
+    // parse the input: pokemonName locationNoSpaces time
+    var pokemonName = args[0];
+    var loc = args[1];
+    var raidTime = args[2];
+    var pokemonNameCap = pokemonName.charAt(0).toUpperCase() + pokemonName.slice(1);
+    var locCap = loc.charAt(0).toUpperCase() + loc.slice(1);
+    
+    // check if pokemon is on approved list
+    if (!approvedPokemon.includes(pokemonName.toLowerCase()))
+      return message.reply(`Sorry ${message.author}, ${args[0]} is not on my approved pokemon list for raid channel creation.`);
+    
+    var shortPokemonName = pokemonName.substring(0, maxPokemonNameLength).toLowerCase();
+    var shortLoc = loc.substring(0, maxLocNameLength).toLowerCase();
+    var raidTimeStr = raidTime.replace(':', '-');
+    
+    var newChannelName = shortPokemonName + "_" + shortLoc + "_ends_" + raidTimeStr + raidChannelSuffix;
+    
+    // check for duplicates
+    for (var [key, ch] of message.guild.channels) {
+      if (ch.name == newChannelName) {
+        return message.reply(`Channel <#${ch.id}> already exists.`);
+      }
+    }
+    
+    // create the channel and write a message
+    await message.guild.createChannel(newChannelName, "text")
+        .then(channel => {
+          message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonNameCap}** at **${locCap}**! `);
+          channel.send(`**${pokemonNameCap}** raid has appeared at **${loc}**! You have until **${raidTime}**.\nPlease add a Google Maps link for the gym at ${loc}.`);
+        })
+        .catch(error => message.reply(`Sorry ${message.author}, I couldn't create channel ${newChannelName} because of : ${error}`));
+  }
+  
+  // delete all raid channels
+  if (command === "deleteraidchannels") {
+    if (!checkPermissionsManageChannel(message)) return false;
+    
+    for (var [key, ch] of message.guild.channels) {
+      if (ch.name.endsWith(raidChannelSuffix)) {
+        await ch.delete()
+            .catch(error => message.reply(`Sorry ${message.author}, I couldn't delete because of : ${error}`));
+        message.reply(`Channel ${ch.name}  has been deleted`);
+      }
+    }
+  }
+  
+  // make a raid channel for the last GymHuntrBot raid for a pokemon on the approved list
+  if (command === "raidlast") {
+    var gymHuntrbotId = client.users.find('username', gymHuntrbotName).id;
+    message.channel.fetchMessages({limit: 100})
+        .then(messages => {
+          for (var [key, msg] of messages) {
+            if (msg.author.id === gymHuntrbotId && msg.embeds[0]) {
+              var pokemonName = msg.embeds[0].description.split('\n')[1].toLowerCase();
+              // only create a channel if the pokemon is approved
+              if (approvedPokemon.includes(pokemonName)) {
+                processGymHuntrbotMsg(message, msg);
+                break;
+              }
+            }
+          }
+        });
+  }
 });
 
+// continuously check raid channels for inactivity
+client.on('ready', (evt) => {
+  checkRaidChannels();
+  if (client.raidChannelCheckInterval)
+    clearInterval(client.raidChannelCheckInterval);
+  client.raidChannelCheckInterval = setInterval(checkRaidChannels, raidChannelCheckInterval);
+});
+
+function checkPermissionsManageChannel(message) {
+  var canManageChannels = false;
+  message.member.roles.forEach(role => {
+    if (role.hasPermission('MANAGE_CHANNELS')) canManageChannels = true;
+  });
+  if (!canManageChannels) {
+    message.reply(`Sorry, you do not have permission to do this.`);
+    return false;
+  }
+  return true;
+}
+
+// check raid channels for inactivity and delete them if inactive
+async function checkRaidChannels() {
+  console.log(`Monitoring ${client.channels.size} channels for raid channel inactivity...`);
+  for (var [key, ch] of client.channels) {
+    // Check if is a raid channel
+    if (ch.type === 'text' && ch.name.endsWith(raidChannelSuffix)) {
+      // Check if the last message was > X minutes ago
+      ch.fetchMessages({limit: 1})
+          .then(messages => messages.forEach(message => {
+            var lastMsgDate = moment(message.createdAt);
+            if (lastMsgDate.isBefore(moment().subtract(raidChannelMaxInactivity, 'minutes'))) {
+              console.log(`Deleting raid channel ${ch.id}: ${ch.name} due to inactivity.`);
+              ch.delete()
+                .catch(error => console.log(`I couldn't delete raid channel ${ch.id}: ${ch.name} because of : ${error}`));
+            }
+          }));
+    }
+  }
+}
+
+// process a GymHuntrBot message - create a new channel for coordinating the raid
 async function processGymHuntrbotMsg(message, lastBotMessage) {
-	var emb = lastBotMessage.embeds[0];
-	var gpsCoords = new RegExp('^.*#(.*)','g').exec(emb.url)[1];
-	var gmapsLink = 'https://www.google.com/maps/search/?api=1&query=' + gpsCoords;
-    var descrip = emb.description;
-    // location name is parts[0], name is parts[1], time left is parts[3]
-    var parts = descrip.split('\n');
+  var emb = lastBotMessage.embeds[0];
+  
+  // get the GPS coods and google maps URL
+  var gpsCoords = new RegExp('^.*#(.*)','g').exec(emb.url)[1];
+  var gmapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + gpsCoords;
+  
+  var descrip = emb.description;
+  var parts = descrip.split('\n'); // location name is parts[0], name is parts[1], time left is parts[3]
     
-	var pokemonName = parts[1];
-	// TODO use map to convert long pokemon name to short, e.g. ttar
-    var shortPokemonName = pokemonName.substring(0, maxPokemonNameLength).toLowerCase();
+  // extract the pokemon name
+  var pokemonName = parts[1];
+  // TODO use map to convert long pokemon name to short, e.g. ttar
+  var shortPokemonName = pokemonName.substring(0, maxPokemonNameLength).toLowerCase();
+  
+  // extract first two words only from location and get rid of the trailing period
+  var loc = parts[0].replace(/\./g, '').replace(/\*/g, '');
+  const shortLocRegex = new RegExp(/^([\S]+)?\s?([\S]+)?/g);
+  var shortLoc = shortLocRegex.exec(loc)[0].replace(/\s/g, '-').substring(0, maxLocNameLength).toLowerCase();
+  
+  // extract the time remaining and compute the end time
+  // don't include seconds -- effectively round down
+  const timeRegex = new RegExp(/\*Raid Ending: (\d+) hours (\d+) min \d+ sec\*/g);
+  var raidTimeParts = timeRegex.exec(parts[3]);
+  var raidTime = moment(new Date()).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
+  var raidTimeStr = raidTime.format('h-mma');
+  var raidTimeStrColon = raidTime.format('h:mma');
     
-    // extract first two words only from location and get rid of the trailing period
-	var loc = parts[0].replace(/\./g, '').replace(/\*/g, '');
-    const shortLocRegex = new RegExp(/^([\S]+)?\s?([\S]+)?/g);
-    var shortLoc = shortLocRegex.exec(loc)[0].replace(/\s/g, '-').substring(0, maxLocNameLength).toLowerCase();
+  // form the new channel name
+  // channel name max length is 50
+  var newChannelName = shortPokemonName + "_" + shortLoc + "_ends_" + raidTimeStr + raidChannelSuffix;
+  
+  // check for duplicates
+  for (var [key, ch] of message.guild.channels) {
+    if (ch.name == newChannelName) {
+      return message.reply(`Channel <#${ch.id}> already exists.`);
+    }
+  }
     
-    // extract the time remaining and compute the end time
-    // don't include seconds -- effectively round down
-    const timeRegex = new RegExp(/\*Raid Ending: (\d+) hours (\d+) min \d+ sec\*/g);
-    var raidTimeParts = timeRegex.exec(parts[3]);
-    var raidTime = moment(new Date()).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
-	var raidTimeStr = raidTime.format('h-mma');
-	var raidTimeStrColon = raidTime.format('h:mma');
-    
-    // channel name max length is 50
-    var newChannelName = shortPokemonName + "_" + shortLoc + "_ends_" + raidTimeStr;
-	
-	for(var [key, ch] of message.guild.channels) {
-		if(ch.name == newChannelName) {
-			return message.reply("Channel <#${ch.id}> already exists.");
-		}
-	}
-    
-    // TODO mark as temporary channel
-    await message.guild.createChannel(newChannelName, "text")
-	  .then(channel => {
-		  message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonName}** at **${loc}**! `);
-		  channel.send(`**${pokemonName}** raid has appeared at **${loc}**! You have until **${raidTimeStrColon}**.\nGPS coords: **${gpsCoords}**\n${gmapsLink}`);
-	  })
+  // create the channel and write a message
+  await message.guild.createChannel(newChannelName, "text")
+      .then(channel => {
+        message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonName}** at **${loc}**! `);
+        channel.send(`**${pokemonName}** raid has appeared at **${loc}**! You have until **${raidTimeStrColon}**.\nGPS coords: **${gpsCoords}**\n${gmapsUrl}`);
+      })
       .catch(error => message.reply(`Sorry ${message.author}, I couldn't create channel ${newChannelName} because of : ${error}`));
-	
 }
 
 client.login(config.token);
