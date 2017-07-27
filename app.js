@@ -15,7 +15,7 @@ const config = require("./config.json");
 // config.prefix contains the message prefix.
 
 // info on GymHuntrBot
-const gymHuntrbotChannel = "huntrbot";
+const gymHuntrbotChannelName = "huntrbot";
 const gymHuntrbotName = "GymHuntrBot";
 
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
@@ -53,8 +53,8 @@ client.on("message", async message => {
   // This event will run on every single message received, from any channel or DM.
   
   // if gymhuntrbot posts in the huntrbot channel, process it here
-  var gymHuntrbotId = client.users.find('username', gymHuntrbotName).id;
-  if (message.author.bot && message.author.id === gymHuntrbotId && message.channel.name === gymHuntrbotChannel && message.embeds[0]) {
+  var gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
+  if (message.author.bot && message.author.id === gymHuntrbotId && message.channel.name === gymHuntrbotChannelName && message.embeds[0]) {
     var pokemonName = message.embeds[0].description.split('\n')[1].toLowerCase();
     // only create a channel if the pokemon is approved
     if (approvedPokemon.includes(pokemonName)) {
@@ -187,7 +187,7 @@ client.on("message", async message => {
     for (var [key, ch] of message.guild.channels) {
       if (ch.name === newChannelName) {
         console.log(`Tried to create channel ${newChannelName} but it already exists.`);
-        return message.reply(`Channel <#${ch.id}> already exists.`);
+        return message.reply(`Channel #${ch.id} ${newChannelName} already exists.`);
       }
     }
     
@@ -197,7 +197,7 @@ client.on("message", async message => {
           message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonNameCap}** at **${locCap}**! `);
           channel.send(`**${pokemonNameCap}** raid has appeared at **${loc}**! You have until **${raidTime}**.\nPlease add a Google Maps link for the gym at ${loc}.`);
           channel.setTopic(`Coordinate a raid versus ${pokemonNameCap} at ${loc}! Ends at ${raidTime}.`);
-          console.log(`Created channel <#${channel.id}>.`);
+          console.log(`Created channel #${channel.id} ${newChannelName}.`);
         })
         .catch(error => {
           message.reply(`Sorry ${message.author}, I couldn't create channel ${newChannelName} because of : ${error}`);
@@ -224,8 +224,9 @@ client.on("message", async message => {
   
   // make a raid channel for the last GymHuntrBot raid for a pokemon on the approved list
   if (command === "raidlast") {
-    var gymHuntrbotId = client.users.find('username', gymHuntrbotName).id;
-    message.channel.fetchMessages({limit: 100})
+    var gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
+    var gymHuntrbotChannel = message.guild.channels.find('name', gymHuntrbotChannelName);
+    gymHuntrbotChannel.fetchMessages({limit: 100})
         .then(messages => {
           for (var [key, msg] of messages) {
             if (msg.author.id === gymHuntrbotId && msg.embeds[0]) {
@@ -268,7 +269,7 @@ function checkPermissionsManageMessages(message) {
 // check raid channels for inactivity and delete them if inactive
 async function checkRaidChannels() {
   console.log(`Monitoring ${client.channels.size} channels for raid channel inactivity...`);
-  for (var [key, ch] of client.channels) {
+  for (var [key, ch] of client.channels) { // all channels in all servers
     // Check if is a raid channel
     if (ch.type === 'text' && ch.name.endsWith(raidChannelSuffix)) {
       console.log(`\tChecking #${ch.name} ...`);
@@ -311,7 +312,7 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   // don't include seconds -- effectively round down
   const timeRegex = new RegExp(/\*Raid Ending: (\d+) hours (\d+) min \d+ sec\*/g);
   var raidTimeParts = timeRegex.exec(parts[3]);
-  var raidTime = moment(new Date()).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
+  var raidTime = moment(lastBotMessage.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
   var raidTimeStr = raidTime.format('h-mma').toLowerCase();
   var raidTimeStrColon = raidTime.format('h:mma');
     
@@ -324,17 +325,17 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   for (var [key, ch] of message.guild.channels) {
     if (ch.name == newChannelName) {
       console.log(`Tried to create channel ${newChannelName} but it already exists.`);
-      return message.reply(`Channel <#${ch.id}> already exists.`);
+      return message.reply(`Channel #${ch.id} ${newChannelName} already exists.`);
     }
   }
   
   // create the channel and write a message
   await message.guild.createChannel(newChannelName, "text")
       .then(channel => {
-        message.channel.send(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonName}** at **${loc}**!`);
+        message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonName}** at **${loc}**!`);
         channel.send(`**${pokemonName}** raid has appeared at **${loc}**! You have until **${raidTimeStrColon}**.\nGPS coords: **${gpsCoords}**\n${gmapsUrl}`);
         channel.setTopic(`Coordinate a raid versus ${pokemonName} at ${loc}! Ends at ${raidTimeStrColon}.`);
-        console.log(`Created channel <#${channel.id}>.`);
+        console.log(`Created channel #${channel.id} ${newChannelName}.`);
       })
       .catch(error => {
         message.reply(`Sorry ${message.author}, I couldn't create channel ${newChannelName} because of : ${error}`);
