@@ -19,7 +19,21 @@ const gymHuntrbotChannelName = "huntrbot";
 const gymHuntrbotName = "GymHuntrBot";
 
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
-var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar']; // lower case
+var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar', 'mew', 'mewtwo', 'raiku', 'entei', 'suicune', 'ho-oh', 'celebi']; // lower case
+const shortPokemonNames = [
+    ['articuno', 'arti'],
+    ['zapdos', 'zap'],
+    ['moltres', 'molt'],
+    ['tyranitar', 'ttar'],
+    ['suicune', 'suic']
+];
+
+const shortLocNames = [
+    ['princeton-university', 'pu'],
+    ['princeton', 'pton'],
+    ['carnegie', 'carn'],
+    ['the', ''],
+]; // note, as coded, this replaces only the first instance of [0] with [1]
 
 const maxPokemonNameLength = 12;
 const maxLocNameLength = 17;
@@ -176,8 +190,16 @@ client.on("message", async message => {
     if (!approvedPokemon.includes(pokemonName.toLowerCase()))
       return message.reply(`Sorry ${message.author}, ${args[0]} is not on my approved pokemon list for raid channel creation.`);
     
-    var shortPokemonName = pokemonName.toLowerCase().substring(0, maxPokemonNameLength);
-    var shortLoc = loc.toLowerCase().replace(/[^\w-]/g, '').substring(0, maxLocNameLength);
+    var shortPokemonName = pokemonName.toLowerCase();
+    for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names
+      shortPokemonName = shortPokemonName.replace(shortPokemonNames[i][0], shortPokemonNames[i][1]);
+    }
+    shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
+    var shortLoc = loc.toLowerCase().replace(/[^\w-]/g, '');
+    for (var i = 0; i < shortLocNames.length; i++) { // shorten location names
+      shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
+    }
+    shortLoc = shortLoc.substring(0, maxLocNameLength);
     var raidTimeStr = raidTime.toLowerCase().replace(':', '-').replace(/[^\w-]/g, ''); // allowed variable length
     
     var newChannelName = shortPokemonName + "_" + shortLoc + "_ends_" + raidTimeStr;
@@ -300,13 +322,20 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
     
   // extract the pokemon name
   var pokemonName = parts[1];
-  // TODO use map to convert long pokemon name to short, e.g. ttar
-  var shortPokemonName = pokemonName.toLowerCase().substring(0, maxPokemonNameLength);
+  var shortPokemonName = pokemonName.toLowerCase();
+  for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names
+    shortPokemonName = shortPokemonName.replace(shortPokemonNames[i][0], shortPokemonNames[i][1]);
+  }
+  shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
   
   // extract first two words only from location and get rid of the trailing period
   var loc = parts[0].replace(/\./g, '').replace(/\*/g, '');
   const shortLocRegex = new RegExp(/^([\S]+)?\s?([\S]+)?/g);
-  var shortLoc = shortLocRegex.exec(loc)[0].toLowerCase().replace(/\s/g, '-').replace(/[^\w-]/g, '').substring(0, maxLocNameLength);
+  var shortLoc = shortLocRegex.exec(loc)[0].toLowerCase().replace(/\s/g, '-').replace(/[^\w-]/g, '')
+  for (var i = 0; i < shortLocNames.length; i++) { // shorten location names
+    shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
+  }
+  shortLoc = shortLoc.substring(0, maxLocNameLength);
   
   // extract the time remaining and compute the end time
   // don't include seconds -- effectively round down
