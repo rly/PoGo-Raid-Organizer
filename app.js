@@ -23,9 +23,10 @@ var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar']; /
 
 const maxPokemonNameLength = 12;
 const maxLocNameLength = 17;
+const maxChannelNameLength = 50;
 const raidChannelSuffix = "__";
-const raidChannelCheckInterval = 2 * 60 * 1000; // every 2 minutes
-var raidChannelMaxInactivity = 60; // minutes
+const raidChannelCheckInterval = 5 * 60 * 1000; // every 5 minutes
+var raidChannelMaxInactivity = 120; // minutes
 
 client.on("ready", () => {
   // This event will run if the bot starts, and logs in, successfully.
@@ -168,22 +169,27 @@ client.on("message", async message => {
     var pokemonName = args[0];
     var loc = args[1];
     var raidTime = args[2];
-    var pokemonNameCap = pokemonName.charAt(0).toUpperCase() + pokemonName.slice(1);
+    var pokemonNameCap = pokemonName.charAt(0).toUpperCase() + pokemonName.slice(1).toLowerCase();
     var locCap = loc.charAt(0).toUpperCase() + loc.slice(1);
     
     // check if pokemon is on approved list
     if (!approvedPokemon.includes(pokemonName.toLowerCase()))
       return message.reply(`Sorry ${message.author}, ${args[0]} is not on my approved pokemon list for raid channel creation.`);
     
-    var shortPokemonName = pokemonName.substring(0, maxPokemonNameLength).toLowerCase();
-    var shortLoc = loc.substring(0, maxLocNameLength).toLowerCase();
-    var raidTimeStr = raidTime.replace(':', '-');
+    var shortPokemonName = pokemonName.toLowerCase().substring(0, maxPokemonNameLength);
+    var shortLoc = loc.toLowerCase().replace(/[^\w-]/g, '').substring(0, maxLocNameLength);
+    var raidTimeStr = raidTime.toLowerCase().replace(':', '-').replace(/[^\w-]/g, ''); // allowed variable length
     
-    var newChannelName = shortPokemonName + "_" + shortLoc + "_ends_" + raidTimeStr + raidChannelSuffix;
+    var newChannelName = shortPokemonName + "_" + shortLoc + "_ends_" + raidTimeStr;
+    newChannelName = newChannelName.substring(0, maxChannelNameLength - raidChannelSuffix.length) + raidChannelSuffix;
     
     // check for duplicates
+    console.log(newChannelName);
     for (var [key, ch] of message.guild.channels) {
-      if (ch.name == newChannelName) {
+      console.log(ch.name)
+      console.log(ch.name === newChannelName);
+      if (ch.name === newChannelName) {
+        console.log(`Tried to create channel ${newChannelName} but it already exists.`);
         return message.reply(`Channel <#${ch.id}> already exists.`);
       }
     }
@@ -191,10 +197,15 @@ client.on("message", async message => {
     // create the channel and write a message
     await message.guild.createChannel(newChannelName, "text")
         .then(channel => {
-          message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonNameCap}** at **${locCap}**! `);
+          message.channel.send(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonNameCap}** at **${locCap}**! `);
           channel.send(`**${pokemonNameCap}** raid has appeared at **${loc}**! You have until **${raidTime}**.\nPlease add a Google Maps link for the gym at ${loc}.`);
+          channel.setTopic(`Coordinate a raid versus ${pokemonNameCap} at ${loc}! Ends at ${raidTime}.`);
+          console.log(`Created channel <#${channel.id}>.`);
         })
-        .catch(error => message.reply(`Sorry ${message.author}, I couldn't create channel ${newChannelName} because of : ${error}`));
+        .catch(error => {
+          message.reply(`Sorry ${message.author}, I couldn't create channel ${newChannelName} because of : ${error}`);
+          console.log(`Couldn't create channel ${newChannelName} for ${message.author} because of : ${error}`);
+        });
   }
   
   // delete all raid channels
@@ -204,7 +215,10 @@ client.on("message", async message => {
     for (var [key, ch] of message.guild.channels) {
       if (ch.name.endsWith(raidChannelSuffix)) {
         await ch.delete()
-            .catch(error => message.reply(`Sorry ${message.author}, I couldn't delete because of : ${error}`));
+            .catch(error => {
+              message.reply(`Sorry ${message.author}, I couldn't delete ${ch.name} because of : ${error}`);
+              console.log(`couldn't delete channel ${ch.name} for ${message.author} because of : ${error}`);
+            });
         message.reply(`Channel ${ch.name}  has been deleted`);
       }
     }
@@ -259,14 +273,15 @@ async function checkRaidChannels() {
   for (var [key, ch] of client.channels) {
     // Check if is a raid channel
     if (ch.type === 'text' && ch.name.endsWith(raidChannelSuffix)) {
+      console.log(`\tChecking #${ch.name} ...`);
       // Check if the last message was > X minutes ago
       ch.fetchMessages({limit: 1})
           .then(messages => messages.forEach(message => {
             var lastMsgDate = moment(message.createdAt);
             if (lastMsgDate.isBefore(moment().subtract(raidChannelMaxInactivity, 'minutes'))) {
-              console.log(`Deleting raid channel ${ch.id}: ${ch.name} due to inactivity.`);
+              console.log(`\tDeleting raid channel ${ch.id}: ${ch.name} due to inactivity.`);
               ch.delete()
-                  .catch(error => console.log(`I couldn't delete raid channel ${ch.id}: ${ch.name} because of : ${error}`));
+                  .catch(error => console.log(`\tCouldn't delete raid channel ${ch.id}: ${ch.name} because of : ${error}`));
             }
           }));
     }
@@ -287,39 +302,46 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   // extract the pokemon name
   var pokemonName = parts[1];
   // TODO use map to convert long pokemon name to short, e.g. ttar
-  var shortPokemonName = pokemonName.substring(0, maxPokemonNameLength).toLowerCase();
+  var shortPokemonName = pokemonName.toLowerCase().substring(0, maxPokemonNameLength);
   
   // extract first two words only from location and get rid of the trailing period
   var loc = parts[0].replace(/\./g, '').replace(/\*/g, '');
   const shortLocRegex = new RegExp(/^([\S]+)?\s?([\S]+)?/g);
-  var shortLoc = shortLocRegex.exec(loc)[0].replace(/\s/g, '-').substring(0, maxLocNameLength).toLowerCase();
+  var shortLoc = shortLocRegex.exec(loc)[0].toLowerCase().replace(/\s/g, '-').replace(/[^\w-]/g, '').substring(0, maxLocNameLength);
   
   // extract the time remaining and compute the end time
   // don't include seconds -- effectively round down
   const timeRegex = new RegExp(/\*Raid Ending: (\d+) hours (\d+) min \d+ sec\*/g);
   var raidTimeParts = timeRegex.exec(parts[3]);
   var raidTime = moment(new Date()).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
-  var raidTimeStr = raidTime.format('h-mma');
+  var raidTimeStr = raidTime.format('h-mma').toLowerCase();
   var raidTimeStrColon = raidTime.format('h:mma');
     
   // form the new channel name
   // channel name max length is 50
-  var newChannelName = shortPokemonName + "_" + shortLoc + "_ends_" + raidTimeStr + raidChannelSuffix;
+  var newChannelName = shortPokemonName + "_" + shortLoc + "_ends_" + raidTimeStr;
+  newChannelName = newChannelName.substring(0, maxChannelNameLength - raidChannelSuffix.length) + raidChannelSuffix;
   
   // check for duplicates
   for (var [key, ch] of message.guild.channels) {
     if (ch.name == newChannelName) {
+      console.log(`Tried to create channel ${newChannelName} but it already exists.`);
       return message.reply(`Channel <#${ch.id}> already exists.`);
     }
   }
-    
+  
   // create the channel and write a message
   await message.guild.createChannel(newChannelName, "text")
       .then(channel => {
-        message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonName}** at **${loc}**! `);
+        message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonName}** at **${loc}**!`);
         channel.send(`**${pokemonName}** raid has appeared at **${loc}**! You have until **${raidTimeStrColon}**.\nGPS coords: **${gpsCoords}**\n${gmapsUrl}`);
+        channel.setTopic(`Coordinate a raid versus ${pokemonName} at ${loc}! Ends at ${raidTimeStrColon}.`);
+        console.log(`Created channel <#${channel.id}>.`);
       })
-      .catch(error => message.reply(`Sorry ${message.author}, I couldn't create channel ${newChannelName} because of : ${error}`));
+      .catch(error => {
+        message.reply(`Sorry ${message.author}, I couldn't create channel ${newChannelName} because of : ${error}`);
+        console.log(`Couldn't create channel ${newChannelName} for ${message.author} because of : ${error}`);
+      });
 }
 
 client.login(config.token);
