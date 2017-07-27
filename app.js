@@ -330,7 +330,7 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   
   // extract first two words only from location and get rid of the trailing period
   var loc = parts[0].replace(/\./g, '').replace(/\*/g, '');
-  const shortLocRegex = new RegExp(/^([\S]+)?\s?([\S]+)?/g);
+  const shortLocRegex = new RegExp(/^([\S]+)?\s?([\S]+)?\s?([\S]+)?/g);
   var shortLoc = shortLocRegex.exec(loc)[0].toLowerCase().replace(/\s/g, '-').replace(/[^\w-]/g, '')
   for (var i = 0; i < shortLocNames.length; i++) { // shorten location names
     shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
