@@ -34,6 +34,8 @@ const shortLocNames = [
     ['carnegie', 'carn'],
     ['west-windsor', 'wwind'],
     ['plainsboro', 'pboro'],
+    ['the-', ''],
+    ['-the', ''],
     ['the', ''],
 ]; // note, as coded, this replaces only the first instance of [0] with [1]
 
@@ -330,10 +332,8 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   }
   shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
   
-  // extract first three words only from location and get rid of the trailing period
-  var loc = parts[0].replace(/\./g, '').replace(/\*/g, '');
-  const shortLocRegex = new RegExp(/^([\S]+)?\s?([\S]+)?\s?([\S]+)?/g);
-  var shortLoc = shortLocRegex.exec(loc)[0].toLowerCase().replace(/\s/g, '-').replace(/[^\w-]/g, '')
+  // clean up location name
+  var shortLoc = parts[0].toLowerCase().replace(/\s/g, '-').replace(/[^\w-]/g, '')
   for (var i = 0; i < shortLocNames.length; i++) { // shorten location names
     shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
   }
