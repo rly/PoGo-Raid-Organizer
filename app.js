@@ -333,7 +333,8 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
   
   // clean up location name
-  var shortLoc = parts[0].toLowerCase().replace(/\s/g, '-').replace(/[^\w-]/g, '')
+  var loc = parts[0];
+  var shortLoc = loc.toLowerCase().replace(/\s/g, '-').replace(/[^\w-]/g, '')
   for (var i = 0; i < shortLocNames.length; i++) { // shorten location names
     shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
   }
