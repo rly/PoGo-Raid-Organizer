@@ -44,7 +44,8 @@ const maxLocNameLength = 18;
 const maxChannelNameLength = 50; // to prevent name too long error
 const raidChannelSuffix = "__";
 const raidChannelCheckInterval = 5 * 60 * 1000; // every 5 minutes
-var raidChannelMaxInactivity = 120; // minutes
+const raidChannelMaxInactivity = 120; // minutes
+const raidChannelMaxTimeAfterRaid = 0; // minutes
 
 client.on("ready", () => {
   // This event will run if the bot starts, and logs in, successfully.
@@ -199,7 +200,7 @@ client.on("message", async message => {
       shortPokemonName = shortPokemonName.replace(shortPokemonNames[i][0], shortPokemonNames[i][1]);
     }
     shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
-    var shortLoc = loc.toLowerCase().replace(/[^\w-]/g, '');
+    var shortLoc = loc.toLowerCase().replace(/_/g, '-').replace(/[^\w-]/g, '');
     for (var i = 0; i < shortLocNames.length; i++) { // shorten location names
       shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
     }
@@ -299,7 +300,17 @@ async function checkRaidChannels() {
     // Check if is a raid channel
     if (ch.type === 'text' && ch.name.endsWith(raidChannelSuffix)) {
       console.log(`\tChecking #${ch.name} ...`);
-      // Check if the last message was > X minutes ago
+      // Check if the time is Y minutes after the raid end time
+      var raidTimeStr = ch.name.substring(0, ch.name.length - raidChannelSuffix.length);
+      raidTimeStr = raidTimeStr.substring(raidTimeStr.lastIndexOf('_') + 1);
+      raidTimeMoment = moment(moment().format('YYYYMMDD') + ' ' + raidTimeStr, 'YYYYMMDD h-mma'); // current date but set time
+      if (raidTimeMoment.isValid() && raidTimeMoment.isBefore(moment().add(raidChannelMaxTimeAfterRaid, 'minutes'))) {
+        console.log(`\tDeleting raid channel ${ch.id}: ${ch.name} because it is ${raidChannelMaxTimeAfterRaid} min past the raid end time.`);
+        return ch.delete()
+            .catch(error => console.log(`\tCouldn't delete raid channel <#${ch.id}> because of : ${error}`));
+      }
+        
+      // Check if the last message was > X minutes ago or is Y minutes after the raid time
       ch.fetchMessages({limit: 1})
           .then(messages => messages.forEach(message => {
             var lastMsgDate = moment(message.createdAt);
@@ -334,7 +345,7 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   
   // clean up location name
   var loc = parts[0];
-  var shortLoc = loc.toLowerCase().replace(/\s/g, '-').replace(/[^\w-]/g, '')
+  var shortLoc = loc.toLowerCase().replace(/\s|_/g, '-').replace(/[^\w-]/g, '')
   for (var i = 0; i < shortLocNames.length; i++) { // shorten location names
     shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
   }
