@@ -24,6 +24,7 @@ Key prefix: `+`
 
 - `+say message` - The bot will say `message`.
 - `+ping` - Tests ping time of the bot.
+- `+purge numMessages` - Deletes `numMessages` most recent messages from the current channel. `numMessages` must be between 2 and 100. Requires `MANAGE_CHANNELS` and `MANAGE_MESSAGES` permissions. 
 
 ## Automatic Actions
 
@@ -55,12 +56,9 @@ Some of the above disadvantages can be fixed if GymHuntrBot reports raids quickl
 ## TODO
 
 - Implement `+help`.
-- Add static google map using http://staticmapmaker.com/google/ API.
 - Delete automatic raid channel 5 minutes after raid is over.
 - TODO add instructions for hosting locally
 - TODO deploy in cloud and add instructions
-- Allow manual raid channel creation for any pokemon 
-- Add command to purge messages
 - Move bot messages to an embed where you can use HTML/Markdown: https://anidiotsguide.gitbooks.io/discord-js-bot-guide/examples/using-embeds-in-messages.html
 
 ## Credits
