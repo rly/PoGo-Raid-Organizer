@@ -61,6 +61,7 @@ Some of the above disadvantages can be fixed if GymHuntrBot reports raids quickl
 - TODO deploy in cloud and add instructions
 - Allow manual raid channel creation for any pokemon 
 - Add command to purge messages
+- Move bot messages to an embed where you can use HTML/Markdown: https://anidiotsguide.gitbooks.io/discord-js-bot-guide/examples/using-embeds-in-messages.html
 
 ## Credits
 

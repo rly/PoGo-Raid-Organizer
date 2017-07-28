@@ -209,7 +209,7 @@ client.on("message", async message => {
     for (var [key, ch] of message.guild.channels) {
       if (ch.name === newChannelName) {
         console.log(`Tried to create channel ${newChannelName} but it already exists.`);
-        return message.reply(`Channel #${ch.id} ${newChannelName} already exists.`);
+        return message.reply(`Channel <#${ch.id}> already exists.`);
       }
     }
     
@@ -236,7 +236,7 @@ client.on("message", async message => {
         await ch.delete()
             .catch(error => {
               message.reply(`Sorry ${message.author}, I couldn't delete ${ch.name} because of : ${error}`);
-              console.log(`couldn't delete channel ${ch.name} for ${message.author} because of : ${error}`);
+              console.log(`Couldn't delete raid channel <#${ch.id}> for ${message.author} because of : ${error}`);
             });
         message.reply(`Channel ${ch.name}  has been deleted`);
         console.log(`Channel ${ch.name}  has been deleted`);
@@ -302,7 +302,7 @@ async function checkRaidChannels() {
             if (lastMsgDate.isBefore(moment().subtract(raidChannelMaxInactivity, 'minutes'))) {
               console.log(`\tDeleting raid channel ${ch.id}: ${ch.name} due to inactivity.`);
               ch.delete()
-                  .catch(error => console.log(`\tCouldn't delete raid channel ${ch.id}: ${ch.name} because of : ${error}`));
+                  .catch(error => console.log(`\tCouldn't delete raid channel <#${ch.id}> because of : ${error}`));
             }
           }));
     }
@@ -353,7 +353,7 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   for (var [key, ch] of message.guild.channels) {
     if (ch.name == newChannelName) {
       console.log(`Tried to create channel ${newChannelName} but it already exists.`);
-      return message.reply(`Channel #${ch.id} ${newChannelName} already exists.`);
+      return message.reply(`Channel <#${ch.id}> already exists.`);
     }
   }
   
@@ -362,7 +362,7 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
       .then(channel => {
         message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonName}** at **${loc}**!`);
         channel.send(`**${pokemonName}** raid has appeared at **${loc}**! You have until **${raidTimeStrColon}**.\nGPS coords: **${gpsCoords}**\nGoogle Maps: ${gmapsUrl}\n`);
-        channel.send(`Map image: https://maps.googleapis.com/maps/api/staticmap?center=${gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${gpsCoords}`);
+        channel.send(`Map image: https://maps.googleapis.com/maps/api/staticmap?center=${gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${gpsCoords}`);
         channel.setTopic(`Coordinate a raid versus ${pokemonName} at ${loc}! Ends at ${raidTimeStrColon}.`);
         console.log(`Created channel #${channel.id} ${newChannelName}.`);
       })
