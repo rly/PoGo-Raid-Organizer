@@ -110,7 +110,7 @@ client.on("message", async message => {
     message.channel.send(sayMessage);
   }
   
-  /*if (command === "purge") {
+  if (command === "purge") {
     if (!checkPermissionsManageChannel(message) || !checkPermissionsManageMessages(message)) return false;
     // This command removes all messages from all users in the channel, up to 100.
     // First message is the purge command.
@@ -125,7 +125,7 @@ client.on("message", async message => {
     // delete the specified number of messages, newest first. 
     message.channel.bulkDelete(deleteCount)
         .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
-  }*/
+  }
   
   /*if (command === "createchannel") {
     await message.guild.createChannel(args[0], "text")
