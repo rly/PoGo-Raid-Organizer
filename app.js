@@ -187,8 +187,8 @@ client.on("message", async message => {
     var locCap = loc.charAt(0).toUpperCase() + loc.slice(1);
     
     // check if pokemon is on approved list
-    if (!approvedPokemon.includes(pokemonName.toLowerCase()))
-      return message.reply(`Sorry ${message.author}, ${args[0]} is not on my approved pokemon list for raid channel creation.`);
+    //if (!approvedPokemon.includes(pokemonName.toLowerCase()))
+    //  return message.reply(`Sorry ${message.author}, ${args[0]} is not on my approved pokemon list for raid //channel creation.`);
     
     var shortPokemonName = pokemonName.toLowerCase();
     for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names

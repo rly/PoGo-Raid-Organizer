@@ -11,14 +11,14 @@ Key prefix: `+`
 ### Channel Management
 
 - `+raidlast` - Creates a raid channel for the last qualifying raid announcement made by GymHuntrBot in the GymHuntrBot channel. Also makes a post with a Google Maps URL to the gym location.
-- `+raid pokemonName locationNoSpaces time` - If `pokemonName` is on the approved list for making raid channels, this creates a raid channel with the location and time information. Please add a Google Maps URL of the gym location to that channel to help Trainers find it. For example, `+raid lugia princeton-stadium 7:49pm`
+- `+raid pokemonName locationNoSpaces time` - Creates a raid channel with the location and time information. Please add a Google Maps URL of the gym location to that channel to help Trainers find it. For example, `+raid lugia princeton-stadium 7:49pm`
 - `+deleteraidchannels` - Deletes all raid channels (as identified by the suffix "__" by default) regardless of state. Requires `MANAGE_CHANNELS` permission.
 
 ### Approved Pokemon List Management
 
-- `+approve listOfPokemonNames` - These pokemon will be added to the approved list for making raid channels. Requires `MANAGE_CHANNELS` permission.
-- `+disapprove listOfPokemonNames` - These pokemon will be removed to the approved list for making raid channels. Requires `MANAGE_CHANNELS` permission.
-- `+list` - These pokemon are on the approved list for making raid channels. Default: Lugia, Articuno, Zapdos, Moltres, Tyranitar, Mew, Mewtwo, Raiku, Entei, Suicune, Ho-oh, Celebi
+- `+approve listOfPokemonNames` - These pokemon will be added to the approved list for making raid channels automatically. Requires `MANAGE_CHANNELS` permission.
+- `+disapprove listOfPokemonNames` - These pokemon will be removed to the approved list for making raid channels automatically. Requires `MANAGE_CHANNELS` permission.
+- `+list` - These pokemon are on the approved list for making raid channels automatically. Default: Lugia, Articuno, Zapdos, Moltres, Tyranitar, Mew, Mewtwo, Raiku, Entei, Suicune, Ho-oh, Celebi
 
 ### Utilities
 
