@@ -339,6 +339,7 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
     shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
   }
   shortLoc = shortLoc.substring(0, maxLocNameLength);
+  shortLoc = shortLoc.replace(/-/g, ' ').trim().replace(/\s/g, '-'); // trim trailing -
   
   // extract the time remaining and compute the end time
   // don't include seconds -- effectively round down
