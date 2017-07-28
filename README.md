@@ -58,6 +58,8 @@ Some of the above disadvantages can be fixed if GymHuntrBot reports raids quickl
 - Implement `+help`.
 - Delete automatic raid channel 5 minutes after raid is over.
 - Move bot messages to an embed where you can use HTML/Markdown: https://anidiotsguide.gitbooks.io/discord-js-bot-guide/examples/using-embeds-in-messages.html
+- Add image of Pokemon to embed
+- Pin new message
 - Add instructions for hosting locally
 - Deploy in cloud and add instructions
 
