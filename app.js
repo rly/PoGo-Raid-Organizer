@@ -37,7 +37,7 @@ const shortLocNames = [
 
 const maxPokemonNameLength = 12;
 const maxLocNameLength = 17;
-const maxChannelNameLength = 50;
+const maxChannelNameLength = 40; // actually 50, but too long and it's not useful esp on mobile
 const raidChannelSuffix = "__";
 const raidChannelCheckInterval = 5 * 60 * 1000; // every 5 minutes
 var raidChannelMaxInactivity = 120; // minutes
@@ -202,7 +202,7 @@ client.on("message", async message => {
     shortLoc = shortLoc.substring(0, maxLocNameLength);
     var raidTimeStr = raidTime.toLowerCase().replace(':', '-').replace(/[^\w-]/g, ''); // allowed variable length
     
-    var newChannelName = shortPokemonName + "_" + shortLoc + "_ends_" + raidTimeStr;
+    var newChannelName = shortPokemonName + "_" + shortLoc + "_" + raidTimeStr;
     newChannelName = newChannelName.substring(0, maxChannelNameLength - raidChannelSuffix.length) + raidChannelSuffix;
     
     // check for duplicates
@@ -328,7 +328,7 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   }
   shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
   
-  // extract first two words only from location and get rid of the trailing period
+  // extract first three words only from location and get rid of the trailing period
   var loc = parts[0].replace(/\./g, '').replace(/\*/g, '');
   const shortLocRegex = new RegExp(/^([\S]+)?\s?([\S]+)?\s?([\S]+)?/g);
   var shortLoc = shortLocRegex.exec(loc)[0].toLowerCase().replace(/\s/g, '-').replace(/[^\w-]/g, '')
@@ -346,8 +346,7 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   var raidTimeStrColon = raidTime.format('h:mma');
     
   // form the new channel name
-  // channel name max length is 50
-  var newChannelName = shortPokemonName + "_" + shortLoc + "_ends_" + raidTimeStr;
+  var newChannelName = shortPokemonName + "_" + shortLoc + "_" + raidTimeStr;
   newChannelName = newChannelName.substring(0, maxChannelNameLength - raidChannelSuffix.length) + raidChannelSuffix;
   
   // check for duplicates
@@ -362,7 +361,8 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   await message.guild.createChannel(newChannelName, "text")
       .then(channel => {
         message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonName}** at **${loc}**!`);
-        channel.send(`**${pokemonName}** raid has appeared at **${loc}**! You have until **${raidTimeStrColon}**.\nGPS coords: **${gpsCoords}**\n${gmapsUrl}`);
+        channel.send(`**${pokemonName}** raid has appeared at **${loc}**! You have until **${raidTimeStrColon}**.\nGPS coords: **${gpsCoords}**\nGoogle Maps: ${gmapsUrl}\n`);
+        channel.send(`Map image: https://maps.googleapis.com/maps/api/staticmap?center=${gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${gpsCoords}`);
         channel.setTopic(`Coordinate a raid versus ${pokemonName} at ${loc}! Ends at ${raidTimeStrColon}.`);
         console.log(`Created channel #${channel.id} ${newChannelName}.`);
       })
