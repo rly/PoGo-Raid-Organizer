@@ -12,7 +12,7 @@ Key prefix: `+`
 
 - `+raidlast` - Creates a raid channel for the last qualifying raid announcement made by GymHuntrBot in the GymHuntrBot channel. Also makes a post with a Google Maps URL to the gym location.
 - `+raid pokemonName locationNoSpaces time` - Creates a raid channel with the location and time information. Please add a Google Maps URL of the gym location to that channel to help Trainers find it. For example, `+raid lugia princeton-stadium 7:49pm`
-- `+deleteraidchannels` - Deletes all raid channels (as identified by the suffix "__" by default) regardless of state. Requires `MANAGE_CHANNELS` permission.
+- `+deleteraids` - Deletes all raid channels (as identified by the suffix "__" by default) regardless of state. Requires `MANAGE_CHANNELS` permission.
 
 ### Approved Pokemon List Management
 

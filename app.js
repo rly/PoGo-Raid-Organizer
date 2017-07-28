@@ -32,12 +32,14 @@ const shortLocNames = [
     ['princeton-university', 'pu'],
     ['princeton', 'pton'],
     ['carnegie', 'carn'],
+    ['west-windsor', 'wwind'],
+    ['plainsboro', 'pboro'],
     ['the', ''],
 ]; // note, as coded, this replaces only the first instance of [0] with [1]
 
 const maxPokemonNameLength = 12;
-const maxLocNameLength = 17;
-const maxChannelNameLength = 40; // actually 50, but too long and it's not useful esp on mobile
+const maxLocNameLength = 13;
+const maxChannelNameLength = 50; // to prevent name too long error
 const raidChannelSuffix = "__";
 const raidChannelCheckInterval = 5 * 60 * 1000; // every 5 minutes
 var raidChannelMaxInactivity = 120; // minutes
@@ -228,7 +230,7 @@ client.on("message", async message => {
   }
   
   // delete all raid channels
-  if (command === "deleteraidchannels") {
+  if (command === "deleteraids") {
     if (!checkPermissionsManageChannel(message)) return false;
     
     for (var [key, ch] of message.guild.channels) {
