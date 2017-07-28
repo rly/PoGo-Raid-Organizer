@@ -38,7 +38,7 @@ const shortLocNames = [
 ]; // note, as coded, this replaces only the first instance of [0] with [1]
 
 const maxPokemonNameLength = 12;
-const maxLocNameLength = 13;
+const maxLocNameLength = 18;
 const maxChannelNameLength = 50; // to prevent name too long error
 const raidChannelSuffix = "__";
 const raidChannelCheckInterval = 5 * 60 * 1000; // every 5 minutes
