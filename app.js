@@ -129,7 +129,7 @@ client.on("message", async message => {
     
     // delete the specified number of messages, newest first. 
     message.channel.bulkDelete(deleteCount)
-        .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
+        .catch(error => message.reply(`I couldn't delete messages because of: ${error}`));
   }
   
   /*if (command === "createchannel") {
@@ -221,7 +221,7 @@ client.on("message", async message => {
     // create the channel and write a message
     await message.guild.createChannel(newChannelName, "text")
         .then(channel => {
-          message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid battle against **${pokemonNameCap}** at **${locCap}**! `);
+          message.reply(`I created the channel <#${channel.id}>. Go there to coordinate a raid battle against **${pokemonNameCap}** at **${locCap}**! `);
           channel.send(`**${pokemonNameCap}** has appeared at **${locCap}**! You have until **${raidTime}**.\nPlease add a Google Maps link for the gym at ${locCap}.`);
           channel.setTopic(`Coordinate a raid versus ${pokemonNameCap} at ${locCap}! Ends at ${raidTime}.`);
           console.log(`Created channel #${channel.id} ${newChannelName}.`);
@@ -379,7 +379,7 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   // create the channel and write a message
   await message.guild.createChannel(newChannelName, "text")
       .then(channel => {
-        message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid battle against **${pokemonName}** at **${cleanLoc}**!`);
+        message.reply(`I created the channel <#${channel.id}>. Go there to coordinate a raid battle against **${pokemonName}** at **${cleanLoc}**!`);
         channel.setTopic(`Coordinate a raid battle against ${pokemonName} at ${cleanLoc}! Ends at ${raidTimeStrColon}.`);
         console.log(`Created channel #${channel.id} ${newChannelName}.`);
         

@@ -33,6 +33,10 @@ Key prefix: `+`
 - Deletes inactive raid channels (default inactivity time: 2 hours), checking periodically (default: every 5 minutes).
 - Shortens Pokemon names and location names when forming the name of a new raid channel.
 
+## Add the bot to your Discord server
+
+- If you already have a Discord server, you can authorize the Bot to run on your server here: https://goo.gl/ottg3W
+
 ## Setup and Deploy
 
 - Currently this runs on a local node.js server.
