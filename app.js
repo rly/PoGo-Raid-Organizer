@@ -221,9 +221,9 @@ client.on("message", async message => {
     // create the channel and write a message
     await message.guild.createChannel(newChannelName, "text")
         .then(channel => {
-          message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonNameCap}** at **${locCap}**! `);
-          channel.send(`**${pokemonNameCap}** raid has appeared at **${loc}**! You have until **${raidTime}**.\nPlease add a Google Maps link for the gym at ${loc}.`);
-          channel.setTopic(`Coordinate a raid versus ${pokemonNameCap} at ${loc}! Ends at ${raidTime}.`);
+          message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid battle against **${pokemonNameCap}** at **${locCap}**! `);
+          channel.send(`**${pokemonNameCap}** has appeared at **${locCap}**! You have until **${raidTime}**.\nPlease add a Google Maps link for the gym at ${locCap}.`);
+          channel.setTopic(`Coordinate a raid versus ${pokemonNameCap} at ${locCap}! Ends at ${raidTime}.`);
           console.log(`Created channel #${channel.id} ${newChannelName}.`);
         })
         .catch(error => {
@@ -303,23 +303,26 @@ async function checkRaidChannels() {
       // Check if the time is Y minutes after the raid end time
       var raidTimeStr = ch.name.substring(0, ch.name.length - raidChannelSuffix.length);
       raidTimeStr = raidTimeStr.substring(raidTimeStr.lastIndexOf('_') + 1);
-      raidTimeMoment = moment(moment().format('YYYYMMDD') + ' ' + raidTimeStr, 'YYYYMMDD h-mma'); // current date but set time
+      // use current date but set time (use format e.g. "11-30pm")
+      raidTimeMoment = moment(moment().format('YYYYMMDD') + ' ' + raidTimeStr, 'YYYYMMDD h-mma', true);
       if (raidTimeMoment.isValid() && raidTimeMoment.isBefore(moment().add(raidChannelMaxTimeAfterRaid, 'minutes'))) {
-        console.log(`\tDeleting raid channel ${ch.id}: ${ch.name} because it is ${raidChannelMaxTimeAfterRaid} min past the raid end time.`);
+        console.log(`\tDeleting raid channel ${ch.id}: ${ch.name} because it is \>=${raidChannelMaxTimeAfterRaid} min past the raid end time.`);
         return ch.delete()
             .catch(error => console.log(`\tCouldn't delete raid channel <#${ch.id}> because of : ${error}`));
       }
         
       // Check if the last message was > X minutes ago or is Y minutes after the raid time
       ch.fetchMessages({limit: 1})
-          .then(messages => messages.forEach(message => {
-            var lastMsgDate = moment(message.createdAt);
-            if (lastMsgDate.isBefore(moment().subtract(raidChannelMaxInactivity, 'minutes'))) {
-              console.log(`\tDeleting raid channel ${ch.id}: ${ch.name} due to inactivity.`);
-              ch.delete()
-                  .catch(error => console.log(`\tCouldn't delete raid channel <#${ch.id}> because of : ${error}`));
-            }
-          }));
+          .then(messages => {
+            messages.forEach(message => {
+              var lastMsgDate = moment(message.createdAt);
+              if (lastMsgDate.isBefore(moment().subtract(raidChannelMaxInactivity, 'minutes'))) {
+                console.log(`\tDeleting raid channel ${ch.id}: ${ch.name} due to inactivity.`);
+                ch.delete()
+                    .catch(error => console.log(`\tCouldn't delete raid channel <#${ch.id}> because of : ${error}`));
+              }
+            });
+          });
     }
   }
 }
@@ -345,7 +348,8 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   
   // clean up location name
   var loc = parts[0];
-  var shortLoc = loc.toLowerCase().replace(/\s|_/g, '-').replace(/[^\w-]/g, '')
+  var cleanLoc = loc.replace(/\*|\./g, ''); // remove bold asterisks and trailing .
+  var shortLoc = loc.toLowerCase().replace(/\s|_/g, '-').replace(/[^\w-]/g, '');
   for (var i = 0; i < shortLocNames.length; i++) { // shorten location names
     shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
   }
@@ -375,11 +379,16 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   // create the channel and write a message
   await message.guild.createChannel(newChannelName, "text")
       .then(channel => {
-        message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid versus **${pokemonName}** at **${loc}**!`);
-        channel.send(`**${pokemonName}** raid has appeared at **${loc}**! You have until **${raidTimeStrColon}**.\nGPS coords: **${gpsCoords}**\nGoogle Maps: ${gmapsUrl}\n`);
-        channel.send(`Map image: https://maps.googleapis.com/maps/api/staticmap?center=${gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${gpsCoords}`);
-        channel.setTopic(`Coordinate a raid versus ${pokemonName} at ${loc}! Ends at ${raidTimeStrColon}.`);
+        message.reply(`Created channel <#${channel.id}>. Go there to coordinate a raid battle against **${pokemonName}** at **${cleanLoc}**!`);
+        channel.setTopic(`Coordinate a raid battle against ${pokemonName} at ${cleanLoc}! Ends at ${raidTimeStrColon}.`);
         console.log(`Created channel #${channel.id} ${newChannelName}.`);
+        
+        const newEmbed = new Discord.RichEmbed()
+          .setDescription(`**${pokemonName}** has appeared at **${cleanLoc}**!\n\nYou have until **${raidTimeStrColon}**.\n\nGPS coords: **${gpsCoords}**\n[Open in Google Maps](${gmapsUrl}). Click image below to embiggen.`)
+          .setThumbnail(`${emb.thumbnail.url}`)
+          .setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${gpsCoords}`)
+          .setColor(0x9b59b6);
+        channel.send({embed: newEmbed});
       })
       .catch(error => {
         message.reply(`Sorry ${message.author}, I couldn't create channel ${newChannelName} because of : ${error}`);

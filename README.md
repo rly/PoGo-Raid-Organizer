@@ -29,6 +29,7 @@ Key prefix: `+`
 ## Automatic Actions
 
 - Listens to channel (default name: "huntrbot") for raid announcements by the GymHuntrBot.
+- Deletes raid channels after the raid time has passed.
 - Deletes inactive raid channels (default inactivity time: 2 hours), checking periodically (default: every 5 minutes).
 - Shortens Pokemon names and location names when forming the name of a new raid channel.
 
@@ -56,10 +57,6 @@ Some of the above disadvantages can be fixed if GymHuntrBot reports raids quickl
 ## TODO
 
 - Implement `+help`.
-- Delete automatic raid channel 5 minutes after raid is over.
-- Move bot messages to an embed where you can use HTML/Markdown: https://anidiotsguide.gitbooks.io/discord-js-bot-guide/examples/using-embeds-in-messages.html
-- Add image of Pokemon to embed
-- Pin new message
 - Add instructions for hosting locally
 - Deploy in cloud and add instructions
 
