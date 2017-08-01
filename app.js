@@ -249,23 +249,57 @@ client.on("message", async message => {
     }
   }
   
-  // make a raid channel for the last GymHuntrBot raid for a pokemon on the approved list
+  // make a raid channel for the last GymHuntrBot raid for a pokemon on the approved list at 
+  // the location entered (must be entered exactly as written in GymHuntrBot's post / the PoGo gym name)
+  // and if the raid is still ongoing
   if (command === "raidlast") {
     var gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
-    var gymHuntrbotChannel = message.guild.channels.find('name', gymHuntrbotChannelName);
-    gymHuntrbotChannel.fetchMessages({limit: 100})
+    var enteredLoc = args.join(' ').replace(/\*|\./g, ''); // also remove any asterisks and .'s
+    var isFound = false;
+    for (var [chkey, ch] of client.channels) { // all channels in all servers
+      if (ch.type != 'text')
+        continue;
+      ch.fetchMessages({limit: 20}) // search last 20 messages in all channels
         .then(messages => {
           for (var [key, msg] of messages) {
-            if (msg.author.id === gymHuntrbotId && msg.embeds[0]) {
-              var pokemonName = msg.embeds[0].description.split('\n')[1].toLowerCase();
-              // only create a channel if the pokemon is approved
-              if (approvedPokemon.includes(pokemonName)) {
-                processGymHuntrbotMsg(message, msg);
-                break;
-              }
+            // only process msg if msg by GymHuntrBot and in right format
+            if (msg.author.id != gymHuntrbotId || !msg.embeds[0])
+              continue;
+            
+            // only create a channel if the pokemon is approved
+            var pokemonName = msg.embeds[0].description.split('\n')[1].toLowerCase();
+            if (!approvedPokemon.includes(pokemonName)) {
+              console.log(pokemonName);
+              continue;
             }
+            
+            // only create a channel if the location name matches the given name
+            var parts = msg.embeds[0].description.split('\n'); // location name is parts[0]
+            var cleanLoc = parts[0].replace(/\*|\./g, '').toLowerCase(); // remove bold asterisks and trailing .
+            if (cleanLoc != enteredLoc.toLowerCase()) {
+              continue;
+            }
+            
+            // only create a channel if there is still time remaining in the raid
+            // extract the time remaining and compute the end time
+            // don't include seconds -- effectively round down
+            const timeRegex = new RegExp(/\*Raid Ending: (\d+) hours (\d+) min \d+ sec\*/g);
+            var raidTimeParts = timeRegex.exec(parts[3]);
+            var raidTime = moment(msg.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
+            if (raidTime.isBefore(moment())) {
+              continue;
+            }
+            processGymHuntrbotMsg(message, msg);
+            isFound = true;
+            break;
           }
         });
+      if (isFound)
+        break; // break out of channel loop
+    }
+    if (!isFound) {
+      message.reply(`Sorry ${message.author}, I couldn't find an ongoing raid at ${enteredLoc} for an approved pokemon. Please check that you entered the location name correctly.`);
+    }
   }
 });
 

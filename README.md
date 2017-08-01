@@ -10,7 +10,7 @@ Key prefix: `+`
 
 ### Channel Management
 
-- `+raidlast` - Creates a raid channel for the last qualifying raid announcement made by GymHuntrBot in the GymHuntrBot channel. Also makes a post with a Google Maps URL to the gym location.
+- `+raidlast exactGymNameWithSpaces` - Creates a raid channel for the raid announcement made by GymHuntrBot in any watched channel for the given gym if the pokemon is approved and the raid is ongoing. Also makes a post with a Google Maps URL and GPS coordinates to the gym location. For example, `+raidlast Washington's Crossing`
 - `+raid pokemonName locationNoSpaces time` - Creates a raid channel with the location and time information. Please add a Google Maps URL of the gym location to that channel to help Trainers find it. For example, `+raid lugia princeton-stadium 7:49pm`
 - `+deleteraids` - Deletes all raid channels (as identified by the suffix "__" by default) regardless of state. Requires `MANAGE_CHANNELS` permission.
 
@@ -28,7 +28,7 @@ Key prefix: `+`
 
 ## Automatic Actions
 
-- Listens to channel (default name: "huntrbot") for raid announcements by the GymHuntrBot.
+- Listens to channel (default name: "huntrbot") for raid announcements by the GymHuntrBot and creates raid channels based on its posts if the pokemon is approved. Also makes a post with a Google Maps URL and GPS coordinates to the gym location.
 - Deletes raid channels after the raid time has passed.
 - Deletes inactive raid channels (default inactivity time: 2 hours), checking periodically (default: every 5 minutes).
 - Shortens Pokemon names and location names when forming the name of a new raid channel.
