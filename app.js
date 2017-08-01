@@ -379,7 +379,7 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   // create the channel and write a message
   await message.guild.createChannel(newChannelName, "text")
       .then(channel => {
-        message.reply(`I created the channel <#${channel.id}>. Go there to coordinate a raid battle against **${pokemonName}** at **${cleanLoc}**!`);
+        message.reply(`I created the temporary raid channel <#${channel.id}> (expires at ${raidTimeStrColon}). Go there to coordinate a raid battle against **${pokemonName}** at **${cleanLoc}**!`);
         channel.setTopic(`Coordinate a raid battle against ${pokemonName} at ${cleanLoc}! Ends at ${raidTimeStrColon}.`);
         console.log(`Created channel #${channel.id} ${newChannelName}.`);
         
