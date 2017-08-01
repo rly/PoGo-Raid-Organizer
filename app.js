@@ -4,22 +4,23 @@ const Discord = require("discord.js");
 // Load library for manipulating dates and times
 const moment = require('moment');
 
-// This is your client. Some people call it `bot`, some people call it `self`, 
-// some might call it `cootchie`. Either way, when you see `client.something`, or `bot.something`,
-// this is what we're refering to. Your client.
+// Create the main client object with methods to interface with Discord
 const client = new Discord.Client();
 
 // Here we load the config.json file that contains our token and our prefix values. 
 const config = require("./config.json");
 // config.token contains the bot's token
 // config.prefix contains the message prefix.
+// config.gmapsApiKey contains the bot's Google Maps Static API key
 
 // info on GymHuntrBot
-const gymHuntrbotChannelName = "huntrbot";
+const gymHuntrbotChannelName = "huntrbot"; // single channel to watch for raid announcements
 const gymHuntrbotName = "GymHuntrBot";
 
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
 var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar', 'mew', 'mewtwo', 'raiku', 'entei', 'suicune', 'ho-oh', 'celebi']; // lower case
+
+// how pokemon names will be shortened for use in channel names
 const shortPokemonNames = [
     ['articuno', 'arti'],
     ['zapdos', 'zap'],
@@ -28,6 +29,7 @@ const shortPokemonNames = [
     ['suicune', 'suic']
 ];
 
+// how location names will be shortened for use in channel names
 const shortLocNames = [
     ['princeton-university', 'pu'],
     ['princeton', 'pton'],
@@ -42,16 +44,15 @@ const shortLocNames = [
 const maxPokemonNameLength = 12;
 const maxLocNameLength = 18;
 const maxChannelNameLength = 50; // to prevent name too long error
-const raidChannelSuffix = "__";
+const raidChannelSuffix = "__"; // channels that end with this are deleted after the raid time ends or x minutes of inactivity
 const raidChannelCheckInterval = 5 * 60 * 1000; // every 5 minutes
 const raidChannelMaxInactivity = 120; // minutes
 const raidChannelMaxTimeAfterRaid = 0; // minutes
+const raidlastMaxMessagesSearch = 20; // number of most recent messages to search in each channel for a matching raid for the +raidlast command
 
 client.on("ready", () => {
   // This event will run if the bot starts, and logs in, successfully.
   console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`); 
-  // Example of changing the bot's playing game to something useful. `client.user` is what the
-  // docs refer to as the "ClientUser".
   client.user.setGame(`on ${client.guilds.size} servers`);
 });
 
@@ -81,12 +82,9 @@ client.on("message", async message => {
     }
   }
   
-  // It's good practice to ignore other bots. This also makes your bot ignore itself
-  // and not get into a spam loop (we call that "botception").
   if (message.author.bot) return;
   
-  // Also good practice to ignore any message that does not start with our prefix, 
-  // which is set in the configuration file.
+  // Ignore any message that does not start with our prefix, 
   if (message.content.indexOf(config.prefix) !== 0) return;
   
   // Here we separate our "command" name, and our "arguments" for the command. 
@@ -95,9 +93,7 @@ client.on("message", async message => {
   // args = ["Is", "this", "the", "real", "life?"]
   const args = message.content.split(/\s+/g);
   const command = args.shift().slice(config.prefix.length).toLowerCase();
-  
-  // Let's go with a few common example commands! Feel free to delete or change those.
-  
+    
   if (command === "ping") {
     // Calculates ping between sending a message and editing it, giving a nice round-trip latency.
     // The second ping is an average latency between the bot and the websocket server (one-way, not round-trip)
@@ -116,10 +112,10 @@ client.on("message", async message => {
   }
   
   if (command === "purge") {
-    if (!checkPermissionsManageChannel(message) || !checkPermissionsManageMessages(message)) return false;
     // This command removes all messages from all users in the channel, up to 100.
     // First message is the purge command.
-    
+    if (!checkPermissionsManageChannel(message) || !checkPermissionsManageMessages(message)) return false;
+
     // get the delete count, as an actual number.
     const deleteCount = parseInt(args[0], 10);
     
@@ -252,6 +248,7 @@ client.on("message", async message => {
   // make a raid channel for the last GymHuntrBot raid for a pokemon on the approved list at 
   // the location entered (must be entered exactly as written in GymHuntrBot's post / the PoGo gym name)
   // and if the raid is still ongoing
+  // e.g. +raidlast Washington's Crossing
   if (command === "raidlast") {
     var gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
     var enteredLoc = args.join(' ').replace(/\*|\./g, ''); // also remove any asterisks and .'s
@@ -259,7 +256,7 @@ client.on("message", async message => {
     for (var [chkey, ch] of client.channels) { // all channels in all servers
       if (ch.type != 'text')
         continue;
-      ch.fetchMessages({limit: 20}) // search last 20 messages in all channels
+      ch.fetchMessages({limit: raidlastMaxMessagesSearch}) // search last X messages in all channels
         .then(messages => {
           for (var [key, msg] of messages) {
             // only process msg if msg by GymHuntrBot and in right format
@@ -327,7 +324,7 @@ function checkPermissionsManageMessages(message) {
   return true;
 }
 
-// check raid channels for inactivity and delete them if inactive
+// check raid channels for inactivity or after raid time and delete them if so
 async function checkRaidChannels() {
   console.log(`Monitoring ${client.channels.size} channels for raid channel inactivity...`);
   for (var [key, ch] of client.channels) { // all channels in all servers
