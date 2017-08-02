@@ -14,7 +14,7 @@ const config = require("./config.json");
 // config.gmapsApiKey contains the bot's Google Maps Static API key
 
 var isAutoRaidChannelOn = false;
-var isReplaceGymHuntrBotPost = true;
+var isReplaceGymHuntrBotPost = false;
 
 // info on GymHuntrBot
 const gymHuntrbotName = "GymHuntrBot";
@@ -91,14 +91,14 @@ client.on("message", async message => {
       }
     }
     
+    // parse bot raid announcement
+    const raidInfo = parseGymHuntrbotMsg(message);
+    
+    // post raid info in channel
+    postRaidInfo(message.channel, raidInfo);
+    
     if (isReplaceGymHuntrBotPost) {
-      // parse bot raid announcement
-      const raidInfo = parseGymHuntrbotMsg(message);
-      
-      // post raid info in channel
-      postRaidInfo(message.channel, raidInfo);
-        
-      // delete the original GymHuntrBot post
+      // delete the original GymHuntrBot post - TODO this messes up the other functions!!!
       message.delete().catch(O_o=>{});
     }
   }
@@ -561,7 +561,7 @@ async function createRaidChannel(message, raidInfo) {
 async function postRaidInfo(channel, raidInfo) {
   const newEmbed = new Discord.RichEmbed()
     .setTitle(`${raidInfo.cleanLoc}`)
-    .setDescription(`${raidInfo.pokemonName}\n\nRaid ending: **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining}).\n\nGPS: **${raidInfo.gpsCoords}**\n**[Open in Google Maps](${raidInfo.gmapsUrl})**.`)
+    .setDescription(`${raidInfo.pokemonName}\n\nRaid ending: **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining}).\n\nGPS: ${raidInfo.gpsCoords}\n**[Open in Google Maps](${raidInfo.gmapsUrl})**.`)
     .setThumbnail(`${raidInfo.thumbUrl}`)
     .setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${raidInfo.gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${raidInfo.gpsCoords}`)
     .setColor(embedColor);
