@@ -497,6 +497,7 @@ function parseGymHuntrbotMsg(lastBotMessage) {
   const raidTime = moment(lastBotMessage.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
   const raidTimeStr = raidTime.format('h-mma').toLowerCase();
   const raidTimeStrColon = raidTime.format('h:mma');
+  const raidTimeRemaining = `${raidTimeParts[1]} h ${raidTimeParts[2]} m remaining` 
     
   return {
     pokemonName: pokemonName, 
@@ -504,7 +505,8 @@ function parseGymHuntrbotMsg(lastBotMessage) {
     cleanLoc: cleanLoc, 
     shortLoc: shortLoc, 
     raidTimeStr: raidTimeStr, 
-    raidTimeStrColon: raidTimeStrColon,
+    raidTimeStrColon: raidTimeStrColon, 
+    raidTimeRemaining: raidTimeRemaining, 
     thumbUrl: thumbUrl, 
     gpsCoords: gpsCoords, 
     gmapsUrl: gmapsUrl
@@ -547,7 +549,7 @@ async function createRaidChannel(message, raidInfo) {
 
 async function postRaidInfo(channel, raidInfo) {
   const newEmbed = new Discord.RichEmbed()
-    .setDescription(`**${raidInfo.pokemonName}** has appeared at **${raidInfo.cleanLoc}**!\n\nYou have until **${raidInfo.raidTimeStrColon}**.\n\nGPS coords: **${raidInfo.gpsCoords}**\n[Open in Google Maps](${raidInfo.gmapsUrl}).`)
+    .setDescription(`**${raidInfo.pokemonName}** has appeared at **${raidInfo.cleanLoc}**!\n\nYou have until **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining}).\n\nGPS coords: **${raidInfo.gpsCoords}**\n[Open in Google Maps](${raidInfo.gmapsUrl}).`)
     .setThumbnail(`${raidInfo.thumbUrl}`)
     .setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${raidInfo.gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${raidInfo.gpsCoords}`)
     .setColor(embedColor);
