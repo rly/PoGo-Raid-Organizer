@@ -17,7 +17,6 @@ var isAutoRaidChannelOn = false;
 var isReplaceGymHuntrBotPost = true;
 
 // info on GymHuntrBot
-const gymHuntrbotChannelName = "huntrbot"; // single channel to watch for raid announcements
 const gymHuntrbotName = "GymHuntrBot";
 
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
@@ -83,7 +82,7 @@ client.on("message", async message => {
   
   // if gymhuntrbot posts in the huntrbot channel, process it here
   const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
-  if (message.author.bot && message.author.id === gymHuntrbotId && message.channel.name === gymHuntrbotChannelName && message.embeds[0]) {
+  if (message.author.bot && message.author.id === gymHuntrbotId && message.embeds[0]) {
     if (isAutoRaidChannelOn) {
       const pokemonName = message.embeds[0].description.split('\n')[1].toLowerCase();
       // only create a channel if the pokemon is approved

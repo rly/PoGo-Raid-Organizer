@@ -2,7 +2,11 @@
 
 ## Introduction
 
-This Discord bot listens to a Discord channel for raid announcements by the GymHuntrBot (http://discord.pokehuntr.com). If the raid announcement is for a pokemon on the approved list, this bot will create a new raid channel for helping Pokemon Go Trainers meet at the raid gym at an arranged time to battle the pokemon together. Inactive raid channels are automatically deleted. 
+This Discord bot listens to a Discord channel for raid announcements by the GymHuntrBot (http://discord.pokehuntr.com). It replaces the raid announcement with an enhanced announcement with a Google Map, GPS coordinates, and raid end time. 
+
+In addition, it allows users to get info on an active raid at a given gym in any channel, and also create temporary raid channels for coordinating raid battles. Raid channels that are inactive or are past the raid end time are automatically deleted. 
+
+Optionally, if GymHuntrBot announces a raid for a pokemon on the approved list, this bot will automatically create a new temporary raid channel for coordinating raid battles. 
 
 ## Commands
 
@@ -34,8 +38,8 @@ Key prefix: `+`
 
 ## Automatic Actions
 
-- Listens to channel (default name: "huntrbot") for raid announcements by the GymHuntrBot and creates raid channels based on its posts if the pokemon is approved. Also makes a post with a Google Maps URL and GPS coordinates to the gym location. [Default off]
-- Replaces GymHuntrBot's post with a post with a Google Maps URL and GPS coordinates.
+- Replaces GymHuntrBot's raid announcement with an enhanced announcement with a Google Maps URL and GPS coordinates to the gym location.
+- Listens for raid announcements by the GymHuntrBot and creates raid channels based on its posts if the pokemon is approved. Also makes a post with a Google Maps URL and GPS coordinates to the gym location. [Default off]
 - Deletes raid channels after the raid time has passed.
 - Deletes inactive raid channels (default inactivity time: 2 hours), checking periodically (default: every 5 minutes).
 - Shortens Pokemon names and location names when forming the name of a new raid channel.
