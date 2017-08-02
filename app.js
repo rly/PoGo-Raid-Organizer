@@ -561,7 +561,7 @@ async function createRaidChannel(message, raidInfo) {
 async function postRaidInfo(channel, raidInfo) {
   const newEmbed = new Discord.RichEmbed()
     .setTitle(`${raidInfo.cleanLoc}`)
-    .setDescription(`**${raidInfo.pokemonName}**\n\nRaid ending: **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining}).\n\nGPS coords: **${raidInfo.gpsCoords}**\n[Open in Google Maps](${raidInfo.gmapsUrl}).`)
+    .setDescription(`${raidInfo.pokemonName}\n\nRaid ending: **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining}).\n\nGPS: **${raidInfo.gpsCoords}**\n**[Open in Google Maps](${raidInfo.gmapsUrl})**.`)
     .setThumbnail(`${raidInfo.thumbUrl}`)
     .setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${raidInfo.gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${raidInfo.gpsCoords}`)
     .setColor(embedColor);
