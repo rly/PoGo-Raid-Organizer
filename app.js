@@ -15,7 +15,7 @@ const config = require("./config.json");
 
 var isAutoRaidChannelOn = false;
 var isReplaceGymHuntrBotPost = true;
-var isPurgeEnabled = true;
+var isPurgeEnabled = false;
 
 // info on GymHuntrBot
 const gymHuntrbotName = "GymHuntrBot";
@@ -55,7 +55,7 @@ const raidChannelSuffix = "__"; // channels that end with this are deleted after
 const raidChannelCheckInterval = 5 * 60 * 1000; // every 5 minutes
 const raidChannelMaxInactivity = 120; // minutes
 const raidChannelMaxTimeAfterRaid = 0; // minutes
-const raidlastMaxMessagesSearch = 20; // number of most recent messages to search in each channel for a matching raid for the +raidlast command
+const raidlastMaxMessagesSearch = 25; // number of most recent messages to search in each channel for a matching raid for the +raidlast command or +raidinfo command
 
 const embedColor = 0xd28ef6;
 
@@ -98,14 +98,7 @@ client.on("message", async message => {
     if (isAutoRaidChannelOn) {
       // only create a channel if the pokemon is approved
       if (approvedPokemon.includes(raidInfo.pokemonName)) {
-        await createRaidChannel(message, raidInfo)
-            .then(channel => {
-              if (channel) {
-                // post raid info in new channel
-                postRaidInfo(channel, raidInfo);
-              }
-            })
-            .catch(error => console.log(`\tCouldn't create raid channel because of : ${error}`));
+        createRaidChannelAndPostInfo(message, raidInfo);
       }
     }
   }
@@ -298,108 +291,34 @@ client.on("message", async message => {
     }
   }
   
-  // make a raid channel for the active GymHuntrBot raid for a pokemon on the approved list at 
-  // the location entered (must be entered exactly as written in GymHuntrBot's post / the PoGo gym name)
+  // make a raid channel for the active raid for a pokemon on the approved list at 
+  // the location entered (must be entered exactly as written in GymHuntrBot's original post / the PoGo gym name)
   // e.g. +raidlast Washington's Crossing
   if (command === "raidlast") {
-    //const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
     const enteredLoc = args.join(' ').replace(/\*|\./g, '').trim(); // also remove any asterisks and .'s
-    var isFound = false;
-    for (let [chkey, ch] of client.channels) { // all channels in all servers - dangerous
-      if (ch.type != 'text')
-        continue;
-      await ch.fetchMessages({limit: raidlastMaxMessagesSearch}) // search last X messages in all channels
-        .then(messages => {
-          for (let [key, msg] of messages) {
-            // only process msg if msg by GymHuntrBot and in right format
-            //if (msg.author.id != gymHuntrbotId || !msg.embeds[0])
-            // only process msg if msg by this bot and in right format
-            if (msg.author.id != client.user.id || !msg.embeds[0])
-              continue;
-            
-            // only create a channel if the pokemon is approved
-            const pokemonName = msg.embeds[0].description.split('\n')[1].toLowerCase();
-            /*if (!approvedPokemon.includes(pokemonName)) {
-              continue;
-            }*/
-            
-            // only create a channel if the location name matches the given name
-            const parts = msg.embeds[0].description.split('\n'); // location name is parts[0]
-            const cleanLoc = parts[0].replace(/\*|\./g, '').toLowerCase().trim(); // remove bold asterisks and trailing .
-            if (cleanLoc != enteredLoc.toLowerCase()) {
-              continue;
-            }
-            
-            // only create a channel if there is still time remaining in the raid
-            // extract the time remaining and compute the end time
-            // don't include seconds -- effectively round down
-            const timeRegex = new RegExp(/\*Raid Ending: (\d+) hours (\d+) min \d+ sec\*/g);
-            const raidTimeParts = timeRegex.exec(parts[3]);
-            const raidTime = moment(msg.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
-            if (raidTime.isBefore(moment())) {
-              continue;
-            }
-            
-            //createRaidChannelFromGymHuntrbotMsg(message, msg);
-            createRaidChannel(message, msg);
-            isFound = true;
-            break;
+    await findRaid(enteredLoc)
+        .then(raidInfo => {
+          if (raidInfo) {
+            createRaidChannelAndPostInfo(message, raidInfo);
+          } else {
+            message.reply(`Sorry ${message.author}, I couldn't find an active raid at ${enteredLoc}. Please check that you entered the location name correctly.`);
           }
         });
-      if (isFound)
-        break; // break out of channel loop
-    }
-    if (!isFound) {
-      message.reply(`Sorry ${message.author}, I couldn't find an active raid at ${enteredLoc} for an approved pokemon. Please check that you entered the location name correctly.`);
-    }
   }
   
-  // post raid info for the active GymHuntrBot raid at 
-  // the location entered (must be entered exactly as written in GymHuntrBot's post / the PoGo gym name)
+  // post raid info for the active raid at 
+  // the location entered (must be entered exactly as written in GymHuntrBot's original post / the PoGo gym name)
   // e.g. +raidlast Washington's Crossing
   if (command === "raidinfo") {
-    //const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
     const enteredLoc = args.join(' ').replace(/\*|\./g, '').trim(); // also remove any asterisks and .'s
-    var isFound = false;
-    for (let [chkey, ch] of client.channels) { // all channels in all servers - dangerous
-      if (ch.type != 'text')
-        continue;
-      await ch.fetchMessages({limit: raidlastMaxMessagesSearch}) // search last X messages in all channels
-        .then(messages => {
-          for (let [key, msg] of messages) {
-            // only process msg if msg by GymHuntrBot and in right format
-            //if (msg.author.id != gymHuntrbotId || !msg.embeds[0])
-            // only process msg if msg by this bot and in right format
-            if (msg.author.id != client.user.id || !msg.embeds[0])
-              continue;
-            
-            // parse previous post
-            //const raidInfo = parseGymHuntrbotMsg(msg);
-            const raidInfo = parseRaidInfo(msg);
-            
-            // check if location name matches the given name
-            if (raidInfo.cleanLoc.toLowerCase() != enteredLoc.toLowerCase()) {
-              continue;
-            }
-            
-            // check if there is still time remaining in the raid
-            if (raidInfo.raidTime.isBefore(moment())) {
-              continue;
-            }
-            
-            // post raid info in current channel
+    await findRaid(enteredLoc)
+        .then(raidInfo => {
+          if (raidInfo) {
             postRaidInfo(message.channel, raidInfo);
-            
-            isFound = true;
-            break;
+          } else {
+            message.reply(`Sorry ${message.author}, I couldn't find an active raid at ${enteredLoc}. Please check that you entered the location name correctly.`);
           }
         });
-      if (isFound)
-        break; // break out of channel loop
-    }
-    if (!isFound) {
-      message.reply(`Sorry ${message.author}, I couldn't find an active raid at ${enteredLoc}. Please check that you entered the location name correctly.`);
-    }
   }
 });
 
@@ -435,10 +354,10 @@ async function checkRaidChannels() {
     if (ch.type === 'text' && ch.name.endsWith(raidChannelSuffix)) {
       console.log(`\tChecking #${ch.name} ...`);
       // Check if the time is Y minutes after the raid end time
-      var raidTimeStr = ch.name.substring(0, ch.name.length - raidChannelSuffix.length);
-      raidTimeStr = raidTimeStr.substring(raidTimeStr.lastIndexOf('_') + 1);
+      var raidTimeInput = ch.name.substring(0, ch.name.length - raidChannelSuffix.length);
+      raidTimeInput = raidTimeStr.substring(raidTimeStr.lastIndexOf('_') + 1);
       // use current date but set time (use format e.g. "11-30pm")
-      raidTimeMoment = moment(moment().format('YYYYMMDD') + ' ' + raidTimeStr, 'YYYYMMDD h-mma', true);
+      raidTimeMoment = moment(moment().format('YYYYMMDD') + ' ' + raidTimeInput, 'YYYYMMDD h-mma', true);
       if (raidTimeMoment.isValid() && raidTimeMoment.isBefore(moment().add(raidChannelMaxTimeAfterRaid, 'minutes'))) {
         console.log(`\tDeleting raid channel ${ch.id}: ${ch.name} because it is \>=${raidChannelMaxTimeAfterRaid} min past the raid end time.`);
         return ch.delete()
@@ -461,34 +380,51 @@ async function checkRaidChannels() {
   }
 }
 
-async function createRaidChannelFromGymHuntrbotMsg(message, lastBotMessage) {
-  // parse GymHuntrBot post
-  const raidInfo = parseGymHuntrbotMsg(lastBotMessage);
-  
-  // create raid channel
-  const channel = await createRaidChannel(message, raidInfo)
-      .then(channel => {
-        if (channel) {
-          // post raid info in new channel
-          postRaidInfo(channel, raidInfo);
-        }
-      })
-      .catch(error => console.log(`\tCouldn't create raid channel because of : ${error}`));
+async function createRaidChannelAndPostInfo(message, raidInfo) {
+  await createRaidChannel(message, raidInfo)
+    .then(channel => {
+      if (channel) {
+        // post raid info in new channel
+        postRaidInfo(channel, raidInfo);
+      }
+    })
+    .catch(error => console.log(`\tCouldn't create raid channel because of : ${error}`));
 }
 
-async function createRaidChannel(message, botMessage) {
-  // parse GymHuntrBot post
-  const raidInfo = parseRaidInfo(botMessage);
-  
-  // create raid channel
-  await createRaidChannel(message, raidInfo)
-      .then(channel => {
-        if (channel) {
-          // post raid info in new channel
-          postRaidInfo(channel, raidInfo);
+async function findRaid(enteredLoc) {
+  var foundRaidInfo = false;
+  for (let [chkey, ch] of client.channels) { // all channels in all servers - dangerous
+    if (ch.type != 'text')
+      continue;
+    
+    await ch.fetchMessages({limit: raidlastMaxMessagesSearch}) // search last X messages in all channels
+      .then(messages => {
+        for (let [key, msg] of messages) {
+          // only process msg if msg by this bot and in right format
+          if (msg.author.id != client.user.id || !msg.embeds[0])
+            continue;
+          
+          // parse previous post
+          const raidInfo = parseRaidInfo(msg);
+          
+          // check if location name matches the given name
+          if (raidInfo.cleanLoc.toLowerCase() != enteredLoc.toLowerCase()) {
+            continue;
+          }
+          
+          // check if there is still time remaining in the raid
+          if (raidInfo.raidTime.isBefore(moment())) {
+            continue;
+          }
+          
+          foundRaidInfo = raidInfo;
+          break;
         }
-      })
-      .catch(error => console.log(`\tCouldn't create raid channel because of : ${error}`));
+      });
+    if (foundRaidInfo)
+      break;
+  }
+  return foundRaidInfo;
 }
 
 // process a GymHuntrBot message - create a new channel for coordinating the raid
@@ -545,7 +481,6 @@ function parseGymHuntrbotMsg(lastBotMessage) {
     gpsCoords: gpsCoords, 
     gmapsUrl: gmapsUrl
   }
-  
 }
 
 async function createRaidChannel(message, raidInfo) {
@@ -624,12 +559,14 @@ function parseRaidInfo(message) {
   
   // extract the time remaining and compute the end time
   // don't include seconds -- effectively round down
-  const timeRegex = new RegExp(/Until .* \((\d+) h (\d+) m remaining\)/g);
+  const timeRegex = new RegExp('Until \\*\\*(.*)\\*\\* \\((.*)\\)');
   const raidTimeParts = timeRegex.exec(parts[1]);
-  const raidTime = moment(message.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
+  const raidTimeInput = raidTimeParts[1].toLowerCase();
+  // use current date but set time (use format e.g. "11:30pm")
+  const raidTime = moment(moment().format('YYYYMMDD') + ' ' + raidTimeInput, 'YYYYMMDD h:mma', true);
   const raidTimeStr = raidTime.format('h-mma').toLowerCase();
   const raidTimeStrColon = raidTime.format('h:mma');
-  const raidTimeRemaining = `${raidTimeParts[1]} h ${raidTimeParts[2]} m remaining`;
+  const raidTimeRemaining = raidTimeParts[2];
     
   return {
     pokemonName: pokemonName, 
