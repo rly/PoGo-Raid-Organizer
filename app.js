@@ -50,6 +50,8 @@ const raidChannelMaxInactivity = 120; // minutes
 const raidChannelMaxTimeAfterRaid = 0; // minutes
 const raidlastMaxMessagesSearch = 20; // number of most recent messages to search in each channel for a matching raid for the +raidlast command
 
+const embedColor = 0x9b59b6;
+
 client.on("ready", () => {
   // This event will run if the bot starts, and logs in, successfully.
   console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`); 
@@ -73,12 +75,12 @@ client.on("message", async message => {
   // This event will run on every single message received, from any channel or DM.
   
   // if gymhuntrbot posts in the huntrbot channel, process it here
-  var gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
+  const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
   if (message.author.bot && message.author.id === gymHuntrbotId && message.channel.name === gymHuntrbotChannelName && message.embeds[0]) {
-    var pokemonName = message.embeds[0].description.split('\n')[1].toLowerCase();
+    const pokemonName = message.embeds[0].description.split('\n')[1].toLowerCase();
     // only create a channel if the pokemon is approved
     if (approvedPokemon.includes(pokemonName)) {
-      processGymHuntrbotMsg(message, message);
+      createRaidChannelFromGymHuntrbotMsg(message, message);
     }
   }
   
@@ -130,7 +132,7 @@ client.on("message", async message => {
   
   /*if (command === "createchannel") {
     await message.guild.createChannel(args[0], "text")
-      .catch(error => message.reply(`Sorry ${message.author}, I couldn't create channel ${args[0]} because of : ${error}`));
+      .catch(error => message.reply(`Sorry, I couldn't create channel ${args[0]} because of : ${error}`));
     message.reply(`Channel ${args[0]} has been created by ${message.author.tag}`);
   }
   
@@ -138,7 +140,7 @@ client.on("message", async message => {
     var channels = message.guild.channels;
     var ch = channels.find('name', args[0]);
     await ch.delete()
-      .catch(error => message.reply(`Sorry ${message.author}, I couldn't delete because of : ${error}`));
+      .catch(error => message.reply(`Sorry, I couldn't delete because of : ${error}`));
     message.reply(`Channel ${args[0]}  has been deleted by ${message.author.tag}`);
   }*/
   
@@ -175,21 +177,22 @@ client.on("message", async message => {
     return message.reply(`My approved Pokemon list is: ${approvedPokemon}`);
   }
   
+  // create raid channel for manually entered raid information (i.e. not from gymHuntrBot)
   // e.g. +raid lugia princeton-stadium 7:49pm
   if (command === "raid") {
     if (args.length != 3)
       return message.reply(`Sorry, that is the incorrect format. The format for creating a raid channel is "${config.prefix}raid pokemonName locationNoSpaces time", e.g. "${config.prefix}raid lugia princeton-stadium 7:49pm.`);
     
     // parse the input: pokemonName locationNoSpaces time
-    var pokemonName = args[0];
-    var loc = args[1];
-    var raidTime = args[2];
-    var pokemonNameCap = pokemonName.charAt(0).toUpperCase() + pokemonName.slice(1).toLowerCase();
-    var locCap = loc.charAt(0).toUpperCase() + loc.slice(1);
+    const pokemonName = args[0];
+    const loc = args[1];
+    const raidTime = args[2];
+    const pokemonNameCap = pokemonName.charAt(0).toUpperCase() + pokemonName.slice(1).toLowerCase();
+    const locCap = loc.charAt(0).toUpperCase() + loc.slice(1);
     
     // check if pokemon is on approved list
     //if (!approvedPokemon.includes(pokemonName.toLowerCase()))
-    //  return message.reply(`Sorry ${message.author}, ${args[0]} is not on my approved pokemon list for raid //channel creation.`);
+    //  return message.reply(`Sorry, ${args[0]} is not on my approved pokemon list for raid //channel creation.`);
     
     var shortPokemonName = pokemonName.toLowerCase();
     for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names
@@ -201,7 +204,7 @@ client.on("message", async message => {
       shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
     }
     shortLoc = shortLoc.substring(0, maxLocNameLength);
-    var raidTimeStr = raidTime.toLowerCase().replace(':', '-').replace(/[^\w-]/g, ''); // allowed variable length
+    const raidTimeStr = raidTime.toLowerCase().replace(':', '-').replace(/[^\w-]/g, ''); // allowed variable length
     
     var newChannelName = shortPokemonName + "_" + shortLoc + "_" + raidTimeStr;
     newChannelName = newChannelName.substring(0, maxChannelNameLength - raidChannelSuffix.length) + raidChannelSuffix;
@@ -232,7 +235,7 @@ client.on("message", async message => {
   if (command === "deleteraids") {
     if (!checkPermissionsManageChannel(message)) return false;
     
-    for (var [key, ch] of message.guild.channels) {
+    for (let [key, ch] of message.guild.channels) {
       if (ch.type === 'text' && ch.name.endsWith(raidChannelSuffix)) {
         await ch.delete()
             .catch(error => {
@@ -245,34 +248,32 @@ client.on("message", async message => {
     }
   }
   
-  // make a raid channel for the last GymHuntrBot raid for a pokemon on the approved list at 
+  // make a raid channel for the active GymHuntrBot raid for a pokemon on the approved list at 
   // the location entered (must be entered exactly as written in GymHuntrBot's post / the PoGo gym name)
-  // and if the raid is still ongoing
   // e.g. +raidlast Washington's Crossing
   if (command === "raidlast") {
-    var gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
-    var enteredLoc = args.join(' ').replace(/\*|\./g, ''); // also remove any asterisks and .'s
+    const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
+    const enteredLoc = args.join(' ').replace(/\*|\./g, '').trim(); // also remove any asterisks and .'s
     var isFound = false;
-    for (var [chkey, ch] of client.channels) { // all channels in all servers
+    for (let [chkey, ch] of client.channels) { // all channels in all servers - dangerous
       if (ch.type != 'text')
         continue;
-      ch.fetchMessages({limit: raidlastMaxMessagesSearch}) // search last X messages in all channels
+      await ch.fetchMessages({limit: raidlastMaxMessagesSearch}) // search last X messages in all channels
         .then(messages => {
-          for (var [key, msg] of messages) {
+          for (let [key, msg] of messages) {
             // only process msg if msg by GymHuntrBot and in right format
             if (msg.author.id != gymHuntrbotId || !msg.embeds[0])
               continue;
             
             // only create a channel if the pokemon is approved
-            var pokemonName = msg.embeds[0].description.split('\n')[1].toLowerCase();
-            if (!approvedPokemon.includes(pokemonName)) {
-              console.log(pokemonName);
+            const pokemonName = msg.embeds[0].description.split('\n')[1].toLowerCase();
+            /*if (!approvedPokemon.includes(pokemonName)) {
               continue;
-            }
+            }*/
             
             // only create a channel if the location name matches the given name
-            var parts = msg.embeds[0].description.split('\n'); // location name is parts[0]
-            var cleanLoc = parts[0].replace(/\*|\./g, '').toLowerCase(); // remove bold asterisks and trailing .
+            const parts = msg.embeds[0].description.split('\n'); // location name is parts[0]
+            const cleanLoc = parts[0].replace(/\*|\./g, '').toLowerCase().trim(); // remove bold asterisks and trailing .
             if (cleanLoc != enteredLoc.toLowerCase()) {
               continue;
             }
@@ -281,12 +282,12 @@ client.on("message", async message => {
             // extract the time remaining and compute the end time
             // don't include seconds -- effectively round down
             const timeRegex = new RegExp(/\*Raid Ending: (\d+) hours (\d+) min \d+ sec\*/g);
-            var raidTimeParts = timeRegex.exec(parts[3]);
-            var raidTime = moment(msg.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
+            const raidTimeParts = timeRegex.exec(parts[3]);
+            const raidTime = moment(msg.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
             if (raidTime.isBefore(moment())) {
               continue;
             }
-            processGymHuntrbotMsg(message, msg);
+            createRaidChannelFromGymHuntrbotMsg(message, msg);
             isFound = true;
             break;
           }
@@ -295,7 +296,59 @@ client.on("message", async message => {
         break; // break out of channel loop
     }
     if (!isFound) {
-      message.reply(`Sorry ${message.author}, I couldn't find an ongoing raid at ${enteredLoc} for an approved pokemon. Please check that you entered the location name correctly.`);
+      message.reply(`Sorry ${message.author}, I couldn't find an active raid at ${enteredLoc} for an approved pokemon. Please check that you entered the location name correctly.`);
+    }
+  }
+  
+  // post raid info for the active GymHuntrBot raid at 
+  // the location entered (must be entered exactly as written in GymHuntrBot's post / the PoGo gym name)
+  // e.g. +raidlast Washington's Crossing
+  if (command === "raidinfo") {
+    const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
+    const enteredLoc = args.join(' ').replace(/\*|\./g, '').trim(); // also remove any asterisks and .'s
+    var isFound = false;
+    for (let [chkey, ch] of client.channels) { // all channels in all servers - dangerous
+      if (ch.type != 'text')
+        continue;
+      await ch.fetchMessages({limit: raidlastMaxMessagesSearch}) // search last X messages in all channels
+        .then(messages => {
+          for (let [key, msg] of messages) {
+            // only process msg if msg by GymHuntrBot and in right format
+            if (msg.author.id != gymHuntrbotId || !msg.embeds[0])
+              continue;
+            
+            // check if location name matches the given name
+            const parts = msg.embeds[0].description.split('\n'); // location name is parts[0]
+            const cleanLoc = parts[0].replace(/\*|\./g, '').toLowerCase().trim(); // remove bold asterisks and trailing .
+            if (cleanLoc != enteredLoc.toLowerCase()) {
+              continue;
+            }
+            
+            // check if there is still time remaining in the raid
+            // extract the time remaining and compute the end time
+            // don't include seconds -- effectively round down
+            const timeRegex = new RegExp(/\*Raid Ending: (\d+) hours (\d+) min \d+ sec\*/g);
+            const raidTimeParts = timeRegex.exec(parts[3]);
+            const raidTime = moment(msg.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
+            if (raidTime.isBefore(moment())) {
+              continue;
+            }
+            
+            // parse GymHuntrBot post
+            const raidInfo = parseGymHuntrbotMsg(msg);
+            
+            // post raid info in current channel
+            postRaidInfo(message.channel, raidInfo);
+            
+            isFound = true;
+            break;
+          }
+        });
+      if (isFound)
+        break; // break out of channel loop
+    }
+    if (!isFound) {
+      message.reply(`Sorry ${message.author}, I couldn't find an active raid at ${enteredLoc}. Please check that you entered the location name correctly.`);
     }
   }
 });
@@ -327,7 +380,7 @@ function checkPermissionsManageMessages(message) {
 // check raid channels for inactivity or after raid time and delete them if so
 async function checkRaidChannels() {
   console.log(`Monitoring ${client.channels.size} channels for raid channel inactivity...`);
-  for (var [key, ch] of client.channels) { // all channels in all servers
+  for (let [key, ch] of client.channels) { // all channels in all servers
     // Check if is a raid channel
     if (ch.type === 'text' && ch.name.endsWith(raidChannelSuffix)) {
       console.log(`\tChecking #${ch.name} ...`);
@@ -358,19 +411,35 @@ async function checkRaidChannels() {
   }
 }
 
+async function createRaidChannelFromGymHuntrbotMsg(message, lastBotMessage) {
+  // parse GymHuntrBot post
+  const raidInfo = parseGymHuntrbotMsg(lastBotMessage);
+  
+  // create raid channel
+  const channel = await createRaidChannel(message, raidInfo);
+  
+  if (channel) {
+    // post raid info in new channel
+    postRaidInfo(channel, raidInfo);
+  }
+}
+
 // process a GymHuntrBot message - create a new channel for coordinating the raid
-async function processGymHuntrbotMsg(message, lastBotMessage) {
-  var emb = lastBotMessage.embeds[0];
+function parseGymHuntrbotMsg(lastBotMessage) {
+  const emb = lastBotMessage.embeds[0];
+  
+  // get the pokemon thumbnail
+  const thumbUrl = emb.thumbnail.url;
   
   // get the GPS coods and google maps URL
-  var gpsCoords = new RegExp('^.*#(.*)','g').exec(emb.url)[1];
-  var gmapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + gpsCoords;
+  const gpsCoords = new RegExp('^.*#(.*)','g').exec(emb.url)[1];
+  const gmapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + gpsCoords;
   
-  var descrip = emb.description;
-  var parts = descrip.split('\n'); // location name is parts[0], name is parts[1], time left is parts[3]
+  const descrip = emb.description;
+  const parts = descrip.split('\n'); // location name is parts[0], name is parts[1], time left is parts[3]
     
   // extract the pokemon name
-  var pokemonName = parts[1];
+  const pokemonName = parts[1];
   var shortPokemonName = pokemonName.toLowerCase();
   for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names
     shortPokemonName = shortPokemonName.replace(shortPokemonNames[i][0], shortPokemonNames[i][1]);
@@ -378,8 +447,8 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
   
   // clean up location name
-  var loc = parts[0];
-  var cleanLoc = loc.replace(/\*|\./g, ''); // remove bold asterisks and trailing .
+  const loc = parts[0];
+  const cleanLoc = loc.replace(/\*|\./g, ''); // remove bold asterisks and trailing .
   var shortLoc = loc.toLowerCase().replace(/\s|_/g, '-').replace(/[^\w-]/g, '');
   for (var i = 0; i < shortLocNames.length; i++) { // shorten location names
     shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
@@ -390,41 +459,65 @@ async function processGymHuntrbotMsg(message, lastBotMessage) {
   // extract the time remaining and compute the end time
   // don't include seconds -- effectively round down
   const timeRegex = new RegExp(/\*Raid Ending: (\d+) hours (\d+) min \d+ sec\*/g);
-  var raidTimeParts = timeRegex.exec(parts[3]);
-  var raidTime = moment(lastBotMessage.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
-  var raidTimeStr = raidTime.format('h-mma').toLowerCase();
-  var raidTimeStrColon = raidTime.format('h:mma');
+  const raidTimeParts = timeRegex.exec(parts[3]);
+  const raidTime = moment(lastBotMessage.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
+  const raidTimeStr = raidTime.format('h-mma').toLowerCase();
+  const raidTimeStrColon = raidTime.format('h:mma');
     
-  // form the new channel name
-  var newChannelName = shortPokemonName + "_" + shortLoc + "_" + raidTimeStr;
+  return {
+    pokemonName: pokemonName, 
+    shortPokemonName: shortPokemonName, 
+    cleanLoc: cleanLoc, 
+    shortLoc: shortLoc, 
+    raidTimeStr: raidTimeStr, 
+    raidTimeStrColon: raidTimeStrColon,
+    thumbUrl: thumbUrl, 
+    gpsCoords: gpsCoords, 
+    gmapsUrl: gmapsUrl
+  }
+  
+}
+
+async function createRaidChannel(message, raidInfo) {
+    // form the new channel name
+  var newChannelName = raidInfo.shortPokemonName + "_" + raidInfo.shortLoc + "_" + raidInfo.raidTimeStr;
   newChannelName = newChannelName.substring(0, maxChannelNameLength - raidChannelSuffix.length) + raidChannelSuffix;
   
   // check for duplicates
+  var isFound = false;
   for (var [key, ch] of message.guild.channels) {
     if (ch.name == newChannelName) {
       console.log(`Tried to create channel ${newChannelName} but it already exists.`);
-      return message.reply(`Channel <#${ch.id}> already exists.`);
+      message.reply(`Channel <#${ch.id}> already exists.`);
+      isFound = true;
+      break;
     }
   }
+  if (isFound)
+    return;
   
-  // create the channel and write a message
+  // create the channel
   await message.guild.createChannel(newChannelName, "text")
       .then(channel => {
-        message.reply(`I created the temporary raid channel <#${channel.id}> (expires at ${raidTimeStrColon}). Go there to coordinate a raid battle against **${pokemonName}** at **${cleanLoc}**!`);
-        channel.setTopic(`Coordinate a raid battle against ${pokemonName} at ${cleanLoc}! Ends at ${raidTimeStrColon}.`);
+        message.reply(`I created the temporary raid channel <#${channel.id}> (expires at ${raidInfo.raidTimeStrColon}). Go there to coordinate a raid battle against **${raidInfo.pokemonName}** at **${raidInfo.cleanLoc}**!`);
+        channel.setTopic(`Coordinate a raid battle against ${raidInfo.pokemonName} at ${raidInfo.cleanLoc}! Ends at ${raidInfo.raidTimeStrColon}.`);
         console.log(`Created channel #${channel.id} ${newChannelName}.`);
         
-        const newEmbed = new Discord.RichEmbed()
-          .setDescription(`**${pokemonName}** has appeared at **${cleanLoc}**!\n\nYou have until **${raidTimeStrColon}**.\n\nGPS coords: **${gpsCoords}**\n[Open in Google Maps](${gmapsUrl}). Click image below to embiggen.`)
-          .setThumbnail(`${emb.thumbnail.url}`)
-          .setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${gpsCoords}`)
-          .setColor(0x9b59b6);
-        channel.send({embed: newEmbed});
+        return channel;
       })
       .catch(error => {
-        message.reply(`Sorry ${message.author}, I couldn't create channel ${newChannelName} because of : ${error}`);
+        message.reply(`Sorry, I couldn't create channel ${newChannelName} because of : ${error}`);
         console.log(`Couldn't create channel ${newChannelName} for ${message.author} because of : ${error}`);
       });
+}
+
+async function postRaidInfo(channel, raidInfo) {
+  const newEmbed = new Discord.RichEmbed()
+    .setDescription(`**${raidInfo.pokemonName}** has appeared at **${raidInfo.cleanLoc}**!\n\nYou have until **${raidInfo.raidTimeStrColon}**.\n\nGPS coords: **${raidInfo.gpsCoords}**\n[Open in Google Maps](${raidInfo.gmapsUrl}).`)
+    .setThumbnail(`${raidInfo.thumbUrl}`)
+    .setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${raidInfo.gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${raidInfo.gpsCoords}`)
+    .setColor(embedColor);
+  channel.send({embed: newEmbed});
 }
 
 client.login(config.token);
