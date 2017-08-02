@@ -380,24 +380,16 @@ async function checkRaidChannels() {
   }
 }
 
-async function createRaidChannelAndPostInfo(message, raidInfo) {
-  await createRaidChannel(message, raidInfo)
-    .then(channel => {
-      if (channel) {
-        // post raid info in new channel
-        postRaidInfo(channel, raidInfo);
-      }
-    })
-    .catch(error => console.log(`\tCouldn't create raid channel because of : ${error}`));
-}
-
+// search through previous self posts for raid information
+// TODO much better to have a database of raid information instead of searching and parsing through post history
 async function findRaid(enteredLoc) {
   var foundRaidInfo = false;
   for (let [chkey, ch] of client.channels) { // all channels in all servers - dangerous
     if (ch.type != 'text')
       continue;
     
-    await ch.fetchMessages({limit: raidlastMaxMessagesSearch}) // search last X messages in all channels
+    // search last X messages in all channels -- dangerous!! potentially super slow
+    await ch.fetchMessages({limit: raidlastMaxMessagesSearch}) 
       .then(messages => {
         for (let [key, msg] of messages) {
           // only process msg if msg by this bot and in right format
@@ -481,6 +473,18 @@ function parseGymHuntrbotMsg(lastBotMessage) {
     gpsCoords: gpsCoords, 
     gmapsUrl: gmapsUrl
   }
+}
+
+
+async function createRaidChannelAndPostInfo(message, raidInfo) {
+  await createRaidChannel(message, raidInfo)
+    .then(channel => {
+      if (channel) {
+        // post raid info in new channel
+        postRaidInfo(channel, raidInfo);
+      }
+    })
+    .catch(error => console.log(`\tCouldn't create raid channel because of : ${error}`));
 }
 
 async function createRaidChannel(message, raidInfo) {
