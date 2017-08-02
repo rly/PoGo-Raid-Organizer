@@ -17,8 +17,8 @@ Key prefix: `+`
 - `+raidlast exactGymNameWithSpaces` - Looks for raid announcements made by GymHuntrBot in any watched channel for the given gym. The Pokemon does not have to be on the approved list. If the raid is ongoing, the bot makes a raid channel and makes a post with a Google Maps URL and GPS coordinates to the gym location. For example, `+raidlast Washington's Crossing`
 - `+raid pokemonName locationNoSpaces time` - Creates a raid channel with the given pokemon name, location, and time information. The Pokemon does not have to be on the approved list. Make sure to add a Google Maps URL of the gym location to that channel to help Trainers find it. For example, `+raid lugia princeton-stadium 7:49pm`
 - `+deleteraids` - Deletes all raid channels (as identified by the suffix "__" by default) regardless of state. Requires `MANAGE_CHANNELS` permission.
-- `+enableautoraid` - Enables automatic raid channel creation from GymHuntrBot's posts (see below)
-- `+disableautoraid` - Disables automatic raid channel creation from GymHuntrBot's posts (see below)
+- `+enableautoraid` - Enables automatic raid channel creation from GymHuntrBot's posts (see below). Requires `MANAGE_CHANNELS` permission.
+- `+disableautoraid` - Disables automatic raid channel creation from GymHuntrBot's posts (see below). Requires `MANAGE_CHANNELS` permission.
 
 ### Approved Pokemon List Management
 
