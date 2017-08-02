@@ -248,7 +248,7 @@ client.on("message", async message => {
     // create the channel and write a message
     await message.guild.createChannel(newChannelName, "text")
         .then(channel => {
-          message.reply(`I created the channel <#${channel.id}>. Go there to coordinate a raid battle against **${pokemonNameCap}** at **${locCap}**! `);
+          message.reply(`I created the temporary raid channel <#${channel.id}>. Go there to coordinate a raid battle against **${pokemonNameCap}** at **${locCap}**! `);
           channel.send(`**${pokemonNameCap}** has appeared at **${locCap}**! You have until **${raidTime}**.\nPlease add a Google Maps link for the gym at ${locCap}.`);
           channel.setTopic(`Coordinate a raid versus ${pokemonNameCap} at ${locCap}! Ends at ${raidTime}.`);
           console.log(`Created channel #${channel.id} ${newChannelName}.`);
