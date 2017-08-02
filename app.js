@@ -355,7 +355,7 @@ async function checkRaidChannels() {
       console.log(`\tChecking #${ch.name} ...`);
       // Check if the time is Y minutes after the raid end time
       var raidTimeInput = ch.name.substring(0, ch.name.length - raidChannelSuffix.length);
-      raidTimeInput = raidTimeStr.substring(raidTimeStr.lastIndexOf('_') + 1);
+      raidTimeInput = raidTimeInput.substring(raidTimeInput.lastIndexOf('_') + 1);
       // use current date but set time (use format e.g. "11-30pm")
       raidTimeMoment = moment(moment().format('YYYYMMDD') + ' ' + raidTimeInput, 'YYYYMMDD h-mma', true);
       if (raidTimeMoment.isValid() && raidTimeMoment.isBefore(moment().add(raidChannelMaxTimeAfterRaid, 'minutes'))) {
