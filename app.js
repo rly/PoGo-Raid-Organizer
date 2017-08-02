@@ -265,7 +265,7 @@ client.on("message", async message => {
     await message.guild.createChannel(newChannelName, "text")
         .then(channel => {
           message.reply(`I created the temporary raid channel <#${channel.id}>. Go there to coordinate a raid battle against **${pokemonNameCap}** at **${locCap}**! `);
-          channel.send(`**${pokemonNameCap}** has appeared at **${locCap}**! You have until **${raidTime}**.\nPlease add a Google Maps link for the gym at ${locCap}.`);
+          channel.send(`**${pokemonNameCap}** has appeared at **${locCap}**! Raid ending: **${raidTime}**.\nPlease add a Google Maps link for the gym at ${locCap}.`);
           channel.setTopic(`Coordinate a raid versus ${pokemonNameCap} at ${locCap}! Ends at ${raidTime}.`);
           console.log(`Created channel #${channel.id} ${newChannelName}.`);
         })
@@ -561,7 +561,8 @@ async function createRaidChannel(message, raidInfo) {
 
 async function postRaidInfo(channel, raidInfo) {
   const newEmbed = new Discord.RichEmbed()
-    .setDescription(`**${raidInfo.pokemonName}** has appeared at **${raidInfo.cleanLoc}**!\n\nYou have until **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining}).\n\nGPS coords: **${raidInfo.gpsCoords}**\n[Open in Google Maps](${raidInfo.gmapsUrl}).`)
+    .setTitle(`${raidInfo.cleanLoc}`)
+    .setDescription(`**${raidInfo.pokemonName}**\n\nRaid ending: **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining}).\n\nGPS coords: **${raidInfo.gpsCoords}**\n[Open in Google Maps](${raidInfo.gmapsUrl}).`)
     .setThumbnail(`${raidInfo.thumbUrl}`)
     .setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${raidInfo.gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${raidInfo.gpsCoords}`)
     .setColor(embedColor);
