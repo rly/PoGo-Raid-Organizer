@@ -14,6 +14,7 @@ const config = require("./config.json");
 // config.gmapsApiKey contains the bot's Google Maps Static API key
 
 var isAutoRaidChannelOn = false;
+var isReplaceGymHuntrBotPost = true;
 
 // info on GymHuntrBot
 const gymHuntrbotChannelName = "huntrbot"; // single channel to watch for raid announcements
@@ -56,7 +57,7 @@ const raidChannelMaxInactivity = 120; // minutes
 const raidChannelMaxTimeAfterRaid = 0; // minutes
 const raidlastMaxMessagesSearch = 20; // number of most recent messages to search in each channel for a matching raid for the +raidlast command
 
-const embedColor = 0x9b59b6;
+const embedColor = 0xd28ef6;
 
 client.on("ready", () => {
   // This event will run if the bot starts, and logs in, successfully.
@@ -81,14 +82,25 @@ client.on("message", async message => {
   // This event will run on every single message received, from any channel or DM.
   
   // if gymhuntrbot posts in the huntrbot channel, process it here
-  if (isAutoRaidChannelOn) {
-    const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
-    if (message.author.bot && message.author.id === gymHuntrbotId && message.channel.name === gymHuntrbotChannelName && message.embeds[0]) {
+  const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
+  if (message.author.bot && message.author.id === gymHuntrbotId && message.channel.name === gymHuntrbotChannelName && message.embeds[0]) {
+    if (isAutoRaidChannelOn) {
       const pokemonName = message.embeds[0].description.split('\n')[1].toLowerCase();
       // only create a channel if the pokemon is approved
       if (approvedPokemon.includes(pokemonName)) {
         createRaidChannelFromGymHuntrbotMsg(message, message);
       }
+    }
+    
+    if (isReplaceGymHuntrBotPost) {
+      // parse bot raid announcement
+      const raidInfo = parseGymHuntrbotMsg(message);
+      
+      // post raid info in channel
+      postRaidInfo(message.channel, raidInfo);
+        
+      // delete the original GymHuntrBot post
+      message.delete().catch(O_o=>{});
     }
   }
   

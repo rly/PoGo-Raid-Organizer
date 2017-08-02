@@ -35,6 +35,7 @@ Key prefix: `+`
 ## Automatic Actions
 
 - Listens to channel (default name: "huntrbot") for raid announcements by the GymHuntrBot and creates raid channels based on its posts if the pokemon is approved. Also makes a post with a Google Maps URL and GPS coordinates to the gym location. [Default off]
+- Replaces GymHuntrBot's post with a post with a Google Maps URL and GPS coordinates.
 - Deletes raid channels after the raid time has passed.
 - Deletes inactive raid channels (default inactivity time: 2 hours), checking periodically (default: every 5 minutes).
 - Shortens Pokemon names and location names when forming the name of a new raid channel.
