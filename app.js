@@ -13,6 +13,8 @@ const config = require("./config.json");
 // config.prefix contains the message prefix.
 // config.gmapsApiKey contains the bot's Google Maps Static API key
 
+var isAutoRaidChannelOn = false;
+
 // info on GymHuntrBot
 const gymHuntrbotChannelName = "huntrbot"; // single channel to watch for raid announcements
 const gymHuntrbotName = "GymHuntrBot";
@@ -79,12 +81,14 @@ client.on("message", async message => {
   // This event will run on every single message received, from any channel or DM.
   
   // if gymhuntrbot posts in the huntrbot channel, process it here
-  const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
-  if (message.author.bot && message.author.id === gymHuntrbotId && message.channel.name === gymHuntrbotChannelName && message.embeds[0]) {
-    const pokemonName = message.embeds[0].description.split('\n')[1].toLowerCase();
-    // only create a channel if the pokemon is approved
-    if (approvedPokemon.includes(pokemonName)) {
-      createRaidChannelFromGymHuntrbotMsg(message, message);
+  if (isAutoRaidChannelOn) {
+    const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
+    if (message.author.bot && message.author.id === gymHuntrbotId && message.channel.name === gymHuntrbotChannelName && message.embeds[0]) {
+      const pokemonName = message.embeds[0].description.split('\n')[1].toLowerCase();
+      // only create a channel if the pokemon is approved
+      if (approvedPokemon.includes(pokemonName)) {
+        createRaidChannelFromGymHuntrbotMsg(message, message);
+      }
     }
   }
   
@@ -117,7 +121,7 @@ client.on("message", async message => {
     message.channel.send(sayMessage);
   }
   
-  if (command === "purge") {
+  /*if (command === "purge") {
     // This command removes all messages from all users in the channel, up to 100.
     // First message is the purge command.
     if (!checkPermissionsManageChannel(message) || !checkPermissionsManageMessages(message)) return false;
@@ -132,7 +136,7 @@ client.on("message", async message => {
     // delete the specified number of messages, newest first. 
     message.channel.bulkDelete(deleteCount)
         .catch(error => message.reply(`I couldn't delete messages because of: ${error}`));
-  }
+  }*/
   
   /*if (command === "createchannel") {
     await message.guild.createChannel(args[0], "text")
@@ -179,6 +183,26 @@ client.on("message", async message => {
   // list all approved pokemon for raid channel creation
   if (command === "list") {
     return message.reply(`My approved Pokemon list is: ${approvedPokemon}`);
+  }
+  
+  // list all approved pokemon for raid channel creation
+  if (command === "enableautoraid") {
+    if (isAutoRaidChannelOn)
+      return message.reply(`Automatic raid channel creation is already ON.`);
+    else {
+      isAutoRaidChannelOn = true;
+      return message.reply(`Automatic raid channel creation is now ON.`);
+    }
+  }
+  
+  // list all approved pokemon for raid channel creation
+  if (command === "disableautoraid") {
+    if (!isAutoRaidChannelOn)
+      return message.reply(`Automatic raid channel creation is already OFF.`);
+    else {
+      isAutoRaidChannelOn = false;
+      return message.reply(`Automatic raid channel creation is now OFF.`);
+    }
   }
   
   // create raid channel for manually entered raid information (i.e. not from gymHuntrBot)

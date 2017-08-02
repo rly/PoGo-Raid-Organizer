@@ -17,6 +17,8 @@ Key prefix: `+`
 - `+raidlast exactGymNameWithSpaces` - Looks for raid announcements made by GymHuntrBot in any watched channel for the given gym. The Pokemon does not have to be on the approved list. If the raid is ongoing, the bot makes a raid channel and makes a post with a Google Maps URL and GPS coordinates to the gym location. For example, `+raidlast Washington's Crossing`
 - `+raid pokemonName locationNoSpaces time` - Creates a raid channel with the given pokemon name, location, and time information. The Pokemon does not have to be on the approved list. Make sure to add a Google Maps URL of the gym location to that channel to help Trainers find it. For example, `+raid lugia princeton-stadium 7:49pm`
 - `+deleteraids` - Deletes all raid channels (as identified by the suffix "__" by default) regardless of state. Requires `MANAGE_CHANNELS` permission.
+- `+enableautoraid` - Enables automatic raid channel creation from GymHuntrBot's posts (see below)
+- `+disableautoraid` - Disables automatic raid channel creation from GymHuntrBot's posts (see below)
 
 ### Approved Pokemon List Management
 
@@ -28,11 +30,11 @@ Key prefix: `+`
 
 - `+say message` - The bot will say `message`.
 - `+ping` - Tests ping time of the bot.
-- `+purge numMessages` - Deletes `numMessages` most recent messages from the current channel. `numMessages` must be between 2 and 100. Requires `MANAGE_CHANNELS` and `MANAGE_MESSAGES` permissions. 
+- `+purge numMessages` - [Currently disabled.] Deletes `numMessages` most recent messages from the current channel. `numMessages` must be between 2 and 100. Requires `MANAGE_CHANNELS` and `MANAGE_MESSAGES` permissions. 
 
 ## Automatic Actions
 
-- Listens to channel (default name: "huntrbot") for raid announcements by the GymHuntrBot and creates raid channels based on its posts if the pokemon is approved. Also makes a post with a Google Maps URL and GPS coordinates to the gym location.
+- Listens to channel (default name: "huntrbot") for raid announcements by the GymHuntrBot and creates raid channels based on its posts if the pokemon is approved. Also makes a post with a Google Maps URL and GPS coordinates to the gym location. [Default off]
 - Deletes raid channels after the raid time has passed.
 - Deletes inactive raid channels (default inactivity time: 2 hours), checking periodically (default: every 5 minutes).
 - Shortens Pokemon names and location names when forming the name of a new raid channel.
