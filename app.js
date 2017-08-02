@@ -26,7 +26,11 @@ const shortPokemonNames = [
     ['zapdos', 'zap'],
     ['moltres', 'molt'],
     ['tyranitar', 'ttar'],
-    ['suicune', 'suic']
+    ['suicune', 'suic'],
+    ['venusaur', 'venu'],
+    ['charizard', 'chari'],
+    ['blastoise', 'blast'],
+    ['snorlax', 'snorl']
 ];
 
 // how location names will be shortened for use in channel names
@@ -41,7 +45,7 @@ const shortLocNames = [
     ['the', ''],
 ]; // note, as coded, this replaces only the first instance of [0] with [1]
 
-const maxPokemonNameLength = 12;
+const maxPokemonNameLength = 10;
 const maxLocNameLength = 18;
 const maxChannelNameLength = 50; // to prevent name too long error
 const raidChannelSuffix = "__"; // channels that end with this are deleted after the raid time ends or x minutes of inactivity
