@@ -14,7 +14,8 @@ const config = require("./config.json");
 // config.gmapsApiKey contains the bot's Google Maps Static API key
 
 var isAutoRaidChannelOn = false;
-var isReplaceGymHuntrBotPost = false;
+var isReplaceGymHuntrBotPost = true;
+var isPurgeEnabled = true;
 
 // info on GymHuntrBot
 const gymHuntrbotName = "GymHuntrBot";
@@ -83,23 +84,29 @@ client.on("message", async message => {
   // if gymhuntrbot posts in the huntrbot channel, process it here
   const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
   if (message.author.bot && message.author.id === gymHuntrbotId && message.embeds[0]) {
-    if (isAutoRaidChannelOn) {
-      const pokemonName = message.embeds[0].description.split('\n')[1].toLowerCase();
-      // only create a channel if the pokemon is approved
-      if (approvedPokemon.includes(pokemonName)) {
-        createRaidChannelFromGymHuntrbotMsg(message, message);
-      }
-    }
-    
-    // parse bot raid announcement
+    // parse GymHuntrBot raid announcement
     const raidInfo = parseGymHuntrbotMsg(message);
     
-    // post raid info in channel
+    // post enhanced raid info in channel
     postRaidInfo(message.channel, raidInfo);
     
     if (isReplaceGymHuntrBotPost) {
-      // delete the original GymHuntrBot post - TODO this messes up the other functions!!!
+      // delete the original GymHuntrBot post
       message.delete().catch(O_o=>{});
+    }
+    
+    if (isAutoRaidChannelOn) {
+      // only create a channel if the pokemon is approved
+      if (approvedPokemon.includes(raidInfo.pokemonName)) {
+        await createRaidChannel(message, raidInfo)
+            .then(channel => {
+              if (channel) {
+                // post raid info in new channel
+                postRaidInfo(channel, raidInfo);
+              }
+            })
+            .catch(error => console.log(`\tCouldn't create raid channel because of : ${error}`));
+      }
     }
   }
   
@@ -132,7 +139,7 @@ client.on("message", async message => {
     message.channel.send(sayMessage);
   }
   
-  /*if (command === "purge") {
+  if (isPurgeEnabled && command === "purge") {
     // This command removes all messages from all users in the channel, up to 100.
     // First message is the purge command.
     if (!checkPermissionsManageChannel(message) || !checkPermissionsManageMessages(message)) return false;
@@ -147,7 +154,7 @@ client.on("message", async message => {
     // delete the specified number of messages, newest first. 
     message.channel.bulkDelete(deleteCount)
         .catch(error => message.reply(`I couldn't delete messages because of: ${error}`));
-  }*/
+  }
   
   /*if (command === "createchannel") {
     await message.guild.createChannel(args[0], "text")
@@ -295,7 +302,7 @@ client.on("message", async message => {
   // the location entered (must be entered exactly as written in GymHuntrBot's post / the PoGo gym name)
   // e.g. +raidlast Washington's Crossing
   if (command === "raidlast") {
-    const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
+    //const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
     const enteredLoc = args.join(' ').replace(/\*|\./g, '').trim(); // also remove any asterisks and .'s
     var isFound = false;
     for (let [chkey, ch] of client.channels) { // all channels in all servers - dangerous
@@ -305,7 +312,9 @@ client.on("message", async message => {
         .then(messages => {
           for (let [key, msg] of messages) {
             // only process msg if msg by GymHuntrBot and in right format
-            if (msg.author.id != gymHuntrbotId || !msg.embeds[0])
+            //if (msg.author.id != gymHuntrbotId || !msg.embeds[0])
+            // only process msg if msg by this bot and in right format
+            if (msg.author.id != client.user.id || !msg.embeds[0])
               continue;
             
             // only create a channel if the pokemon is approved
@@ -330,7 +339,9 @@ client.on("message", async message => {
             if (raidTime.isBefore(moment())) {
               continue;
             }
-            createRaidChannelFromGymHuntrbotMsg(message, msg);
+            
+            //createRaidChannelFromGymHuntrbotMsg(message, msg);
+            createRaidChannel(message, msg);
             isFound = true;
             break;
           }
@@ -347,7 +358,7 @@ client.on("message", async message => {
   // the location entered (must be entered exactly as written in GymHuntrBot's post / the PoGo gym name)
   // e.g. +raidlast Washington's Crossing
   if (command === "raidinfo") {
-    const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
+    //const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
     const enteredLoc = args.join(' ').replace(/\*|\./g, '').trim(); // also remove any asterisks and .'s
     var isFound = false;
     for (let [chkey, ch] of client.channels) { // all channels in all servers - dangerous
@@ -357,28 +368,24 @@ client.on("message", async message => {
         .then(messages => {
           for (let [key, msg] of messages) {
             // only process msg if msg by GymHuntrBot and in right format
-            if (msg.author.id != gymHuntrbotId || !msg.embeds[0])
+            //if (msg.author.id != gymHuntrbotId || !msg.embeds[0])
+            // only process msg if msg by this bot and in right format
+            if (msg.author.id != client.user.id || !msg.embeds[0])
               continue;
             
+            // parse previous post
+            //const raidInfo = parseGymHuntrbotMsg(msg);
+            const raidInfo = parseRaidInfo(msg);
+            
             // check if location name matches the given name
-            const parts = msg.embeds[0].description.split('\n'); // location name is parts[0]
-            const cleanLoc = parts[0].replace(/\*|\./g, '').toLowerCase().trim(); // remove bold asterisks and trailing .
-            if (cleanLoc != enteredLoc.toLowerCase()) {
+            if (raidInfo.cleanLoc.toLowerCase() != enteredLoc.toLowerCase()) {
               continue;
             }
             
             // check if there is still time remaining in the raid
-            // extract the time remaining and compute the end time
-            // don't include seconds -- effectively round down
-            const timeRegex = new RegExp(/\*Raid Ending: (\d+) hours (\d+) min \d+ sec\*/g);
-            const raidTimeParts = timeRegex.exec(parts[3]);
-            const raidTime = moment(msg.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
-            if (raidTime.isBefore(moment())) {
+            if (raidInfo.raidTime.isBefore(moment())) {
               continue;
             }
-            
-            // parse GymHuntrBot post
-            const raidInfo = parseGymHuntrbotMsg(msg);
             
             // post raid info in current channel
             postRaidInfo(message.channel, raidInfo);
@@ -469,6 +476,21 @@ async function createRaidChannelFromGymHuntrbotMsg(message, lastBotMessage) {
       .catch(error => console.log(`\tCouldn't create raid channel because of : ${error}`));
 }
 
+async function createRaidChannel(message, botMessage) {
+  // parse GymHuntrBot post
+  const raidInfo = parseRaidInfo(botMessage);
+  
+  // create raid channel
+  await createRaidChannel(message, raidInfo)
+      .then(channel => {
+        if (channel) {
+          // post raid info in new channel
+          postRaidInfo(channel, raidInfo);
+        }
+      })
+      .catch(error => console.log(`\tCouldn't create raid channel because of : ${error}`));
+}
+
 // process a GymHuntrBot message - create a new channel for coordinating the raid
 function parseGymHuntrbotMsg(lastBotMessage) {
   const emb = lastBotMessage.embeds[0];
@@ -508,13 +530,14 @@ function parseGymHuntrbotMsg(lastBotMessage) {
   const raidTime = moment(lastBotMessage.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
   const raidTimeStr = raidTime.format('h-mma').toLowerCase();
   const raidTimeStrColon = raidTime.format('h:mma');
-  const raidTimeRemaining = `${raidTimeParts[1]} h ${raidTimeParts[2]} m remaining` 
+  const raidTimeRemaining = `${raidTimeParts[1]} h ${raidTimeParts[2]} m remaining`;
     
   return {
     pokemonName: pokemonName, 
     shortPokemonName: shortPokemonName, 
     cleanLoc: cleanLoc, 
     shortLoc: shortLoc, 
+    raidTime: raidTime, 
     raidTimeStr: raidTimeStr, 
     raidTimeStrColon: raidTimeStrColon, 
     raidTimeRemaining: raidTimeRemaining, 
@@ -526,7 +549,7 @@ function parseGymHuntrbotMsg(lastBotMessage) {
 }
 
 async function createRaidChannel(message, raidInfo) {
-    // form the new channel name
+  // form the new channel name
   var newChannelName = raidInfo.shortPokemonName + "_" + raidInfo.shortLoc + "_" + raidInfo.raidTimeStr;
   newChannelName = newChannelName.substring(0, maxChannelNameLength - raidChannelSuffix.length) + raidChannelSuffix;
   
@@ -566,6 +589,61 @@ async function postRaidInfo(channel, raidInfo) {
     .setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${raidInfo.gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${raidInfo.gpsCoords}`)
     .setColor(embedColor);
   channel.send({embed: newEmbed});
+}
+
+// parse raid info generated by this bot
+function parseRaidInfo(message) {
+  const emb = message.embeds[0];
+  
+  // get the pokemon thumbnail
+  const thumbUrl = emb.thumbnail.url;
+  
+  // get the GPS coods and google maps URL
+  const gpsCoords = new RegExp('https://maps\\.googleapis\\.com/maps/api/staticmap\\?center=(.*)&zoom.*').exec(emb.image.url)[1];
+  const gmapsUrl = new RegExp('.*\\[Open in Google Maps\\]\\((.*)\\).*').exec(emb.description)[1];
+  
+  const parts = emb.description.split('\n');
+  
+  // extract the pokemon name
+  const pokemonName = parts[0].replace(/\*|\./g, ''); // remove bold asterisks and trailing .;
+  var shortPokemonName = pokemonName.toLowerCase();
+  for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names
+    shortPokemonName = shortPokemonName.replace(shortPokemonNames[i][0], shortPokemonNames[i][1]);
+  }
+  shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
+  
+  // clean up location name
+  const loc = emb.title;
+  const cleanLoc = loc.replace(/\*|\./g, ''); // remove bold asterisks and trailing .
+  var shortLoc = loc.toLowerCase().replace(/\s|_/g, '-').replace(/[^\w-]/g, '');
+  for (var i = 0; i < shortLocNames.length; i++) { // shorten location names
+    shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
+  }
+  shortLoc = shortLoc.substring(0, maxLocNameLength);
+  shortLoc = shortLoc.replace(/-/g, ' ').trim().replace(/\s/g, '-'); // trim trailing -
+  
+  // extract the time remaining and compute the end time
+  // don't include seconds -- effectively round down
+  const timeRegex = new RegExp(/Until .* \((\d+) h (\d+) m remaining\)/g);
+  const raidTimeParts = timeRegex.exec(parts[1]);
+  const raidTime = moment(message.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
+  const raidTimeStr = raidTime.format('h-mma').toLowerCase();
+  const raidTimeStrColon = raidTime.format('h:mma');
+  const raidTimeRemaining = `${raidTimeParts[1]} h ${raidTimeParts[2]} m remaining`;
+    
+  return {
+    pokemonName: pokemonName, 
+    shortPokemonName: shortPokemonName, 
+    cleanLoc: cleanLoc, 
+    shortLoc: shortLoc, 
+    raidTime: raidTime, 
+    raidTimeStr: raidTimeStr, 
+    raidTimeStrColon: raidTimeStrColon, 
+    raidTimeRemaining: raidTimeRemaining, 
+    thumbUrl: thumbUrl, 
+    gpsCoords: gpsCoords, 
+    gmapsUrl: gmapsUrl
+  }
 }
 
 client.login(config.token);
