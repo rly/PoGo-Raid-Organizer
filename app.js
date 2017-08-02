@@ -187,6 +187,8 @@ client.on("message", async message => {
   
   // list all approved pokemon for raid channel creation
   if (command === "enableautoraid") {
+    if (!checkPermissionsManageChannel(message)) return false;
+    
     if (isAutoRaidChannelOn)
       return message.reply(`Automatic raid channel creation is already ON.`);
     else {
@@ -197,6 +199,8 @@ client.on("message", async message => {
   
   // list all approved pokemon for raid channel creation
   if (command === "disableautoraid") {
+    if (!checkPermissionsManageChannel(message)) return false;
+    
     if (!isAutoRaidChannelOn)
       return message.reply(`Automatic raid channel creation is already OFF.`);
     else {
