@@ -416,12 +416,14 @@ async function createRaidChannelFromGymHuntrbotMsg(message, lastBotMessage) {
   const raidInfo = parseGymHuntrbotMsg(lastBotMessage);
   
   // create raid channel
-  const channel = await createRaidChannel(message, raidInfo);
-  
-  if (channel) {
-    // post raid info in new channel
-    postRaidInfo(channel, raidInfo);
-  }
+  const channel = await createRaidChannel(message, raidInfo)
+      .then(channel => {
+        if (channel) {
+          // post raid info in new channel
+          postRaidInfo(channel, raidInfo);
+        }
+      })
+      .catch(error => console.log(`\tCouldn't create raid channel because of : ${error}`));
 }
 
 // process a GymHuntrBot message - create a new channel for coordinating the raid
@@ -497,7 +499,7 @@ async function createRaidChannel(message, raidInfo) {
     return;
   
   // create the channel
-  await message.guild.createChannel(newChannelName, "text")
+  return message.guild.createChannel(newChannelName, "text")
       .then(channel => {
         message.reply(`I created the temporary raid channel <#${channel.id}> (expires at ${raidInfo.raidTimeStrColon}). Go there to coordinate a raid battle against **${raidInfo.pokemonName}** at **${raidInfo.cleanLoc}**!`);
         channel.setTopic(`Coordinate a raid battle against ${raidInfo.pokemonName} at ${raidInfo.cleanLoc}! Ends at ${raidInfo.raidTimeStrColon}.`);
