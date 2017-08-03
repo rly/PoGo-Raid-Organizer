@@ -55,8 +55,9 @@ Key prefix: `+`
 ## Pros and Cons
 
 Use of this bot has some advantages:
+- Users can easily get the exact location and other information about an active raid, preventing confusion.
 - Raid discussions are isolated in single channels. Users can easily see the current status of coordinating a raid by reading the most recent few messages in a raid channel.
-- Users can easily see information about the Pokemon name, location (name, Google Maps URL, map image), and end time for each raid.
+- In raid channels, users can easily see information about the Pokemon name, location (name, Google Maps URL, map image), and end time.
 - Users can easily see which raids are active by looking at the channel list.
 
 Use of this bot has some disadvantages:
@@ -64,7 +65,7 @@ Use of this bot has some disadvantages:
 - Creating raid channels manually requires knowing the command format.
 - The bot may create a raid channel for a raid for which someone has already created a raid channel manually. 
 - The bot creates new channels which cannot be muted. Everyone would get notifications if they allow notifications. 
-- It's harder to coordinate people across raid locations.
+- It's harder to coordinate people across nearby raid battles.
 - Having lots of raid channels can lead to confusion, (but there would be similar confusion if all these raid discussions were in the same channel).
 
 Some of the above disadvantages can be fixed if GymHuntrBot reports raids quickly and accurately.
@@ -72,6 +73,8 @@ Some of the above disadvantages can be fixed if GymHuntrBot reports raids quickl
 ## TODO
 
 - Implement `+help`.
+- Create database of gym names that gets updated regularly instead of searching through all previous raid announcements. 
+- Implement `+where gymName` with fuzzy matching on gymName to return Google Maps URL (and maybe map)
 - Add instructions for hosting locally
 - Deploy in cloud and add instructions
 
