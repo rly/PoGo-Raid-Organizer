@@ -307,7 +307,7 @@ client.on("message", async message => {
           if (raidInfo) {
             createRaidChannelAndPostInfo(message, raidInfo);
           } else {
-            message.reply(`Sorry ${message.author}, I couldn't find an active raid at ${enteredLoc}. Please check that you entered the location name correctly.`);
+            message.reply(`Sorry, I couldn't find an active raid at ${enteredLoc}. Please check that you entered the location name correctly.`);
           }
         });
   }
@@ -322,7 +322,7 @@ client.on("message", async message => {
           if (raidInfo) {
             postRaidInfo(message.channel, raidInfo);
           } else {
-            message.reply(`Sorry ${message.author}, I couldn't find an active raid at ${enteredLoc}. Please check that you entered the location name correctly.`);
+            message.reply(`Sorry, I couldn't find an active raid at ${enteredLoc}. Please check that you entered the location name correctly.`);
           }
         });
   }
@@ -456,7 +456,6 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
        console.log(`Google Maps reverse geocoding failed for coordinates ${gpsCoords}. Error: ${error}`);
        return 'Open in Google Maps';
     });
-  console.log(gmapsLinkName);
   
   const descrip = emb.description;
   const parts = descrip.split('\n'); // location name is parts[0], name is parts[1], time left is parts[3]
