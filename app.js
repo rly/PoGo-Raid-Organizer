@@ -4,6 +4,9 @@ const Discord = require("discord.js");
 // Load library for manipulating dates and times
 const moment = require('moment');
 
+// Load library for making HTTP GET requests
+const rp = require('request-promise');
+
 // Create the main client object with methods to interface with Discord
 const client = new Discord.Client();
 
@@ -88,7 +91,7 @@ client.on("message", async message => {
   const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
   if (message.author.bot && message.author.id === gymHuntrbotId && message.embeds[0]) {
     // parse GymHuntrBot raid announcement
-    const raidInfo = parseGymHuntrbotMsg(message);
+    const raidInfo = await parseGymHuntrbotMsg(message);
     
     // post enhanced raid info in channel
     postRaidInfo(message.channel, raidInfo);
@@ -423,15 +426,37 @@ async function findRaid(enteredLoc) {
 }
 
 // process a GymHuntrBot message - create a new channel for coordinating the raid
-function parseGymHuntrbotMsg(lastBotMessage) {
+async function parseGymHuntrbotMsg(lastBotMessage) {
   const emb = lastBotMessage.embeds[0];
   
   // get the pokemon thumbnail
   const thumbUrl = emb.thumbnail.url;
   
-  // get the GPS coods and google maps URL
+  // get the GPS coords and google maps URL
   const gpsCoords = new RegExp('^.*#(.*)','g').exec(emb.url)[1];
   const gmapsUrl = gmapsUrlBase + gpsCoords;
+  const gmapsGeocodeOpts = {
+    method: 'GET',
+    uri: 'https://maps.googleapis.com/maps/api/geocode/json',
+    qs: {
+      key: config.gmapsApiKey,
+      latlng: gpsCoords
+    },
+    headers: {
+        'User-Agent': 'Request-Promise'
+    },
+    json: true // Automatically parses the JSON string in the response
+  }
+  const gmapsLinkName = await rp(gmapsGeocodeOpts)
+    .then(response => {
+      const gmapsFAddress = response.results[0].formatted_address;
+      return 'Map: ' + gmapsFAddress.split(',').slice(0, 2).join(',').replace('Township', 'Twp');
+    })
+    .catch(error => {
+       console.log(`Google Maps reverse geocoding failed for coordinates ${gpsCoords}. Error: ${error}`);
+       return 'Open in Google Maps';
+    });
+  console.log(gmapsLinkName);
   
   const descrip = emb.description;
   const parts = descrip.split('\n'); // location name is parts[0], name is parts[1], time left is parts[3]
@@ -474,10 +499,10 @@ function parseGymHuntrbotMsg(lastBotMessage) {
     raidTimeRemaining: raidTimeRemaining, 
     thumbUrl: thumbUrl, 
     gpsCoords: gpsCoords, 
-    gmapsUrl: gmapsUrl
+    gmapsUrl: gmapsUrl,
+    gmapsLinkName: gmapsLinkName
   }
 }
-
 
 async function createRaidChannelAndPostInfo(message, raidInfo) {
   await createRaidChannel(message, raidInfo)
@@ -526,7 +551,7 @@ async function createRaidChannel(message, raidInfo) {
 async function postRaidInfo(channel, raidInfo) {
   const newEmbed = new Discord.RichEmbed()
     .setTitle(`${raidInfo.cleanLoc}`)
-    .setDescription(`**${raidInfo.pokemonName}**\nUntil **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining})\n**[Open in Google Maps](${raidInfo.gmapsUrl})**`)
+    .setDescription(`**${raidInfo.pokemonName}**\nUntil **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining})\n**[${raidInfo.gmapsLinkName}](${raidInfo.gmapsUrl})**`)
     .setThumbnail(`${raidInfo.thumbUrl}`)
     .setColor(embedColor);
   if (isMapImageEnabled) {
@@ -547,7 +572,9 @@ function parseRaidInfo(message) {
   if (emb.image) {
     gpsCoords = new RegExp('https://maps\\.googleapis\\.com/maps/api/staticmap\\?center=(.*)&zoom.*').exec(emb.image.url)[1];
   }
-  const gmapsUrl = new RegExp('.*\\[Open in Google Maps\\]\\((.*)\\).*').exec(emb.description)[1];
+  const gmapsLink = new RegExp('.*\\[(.*)\\]\\((.*)\\).*').exec(emb.description)
+  const gmapsLinkName = gmapsLink[1];
+  const gmapsUrl = gmapsLink[2];
   
   const parts = emb.description.split('\n');
   
@@ -591,7 +618,8 @@ function parseRaidInfo(message) {
     raidTimeRemaining: raidTimeRemaining, 
     thumbUrl: thumbUrl, 
     gpsCoords: gpsCoords, 
-    gmapsUrl: gmapsUrl
+    gmapsUrl: gmapsUrl,
+    gmapsLinkName: gmapsLinkName
   }
 }
 
