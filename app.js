@@ -16,6 +16,9 @@ const config = require("./config.json");
 var isAutoRaidChannelOn = false;
 var isReplaceGymHuntrBotPost = true;
 var isPurgeEnabled = false;
+var isMapImageEnabled = false;
+
+const gmapsUrlBase = 'https://www.google.com/maps/search/?api=1&query=';
 
 // info on GymHuntrBot
 const gymHuntrbotName = "GymHuntrBot";
@@ -293,8 +296,8 @@ client.on("message", async message => {
   
   // make a raid channel for the active raid for a pokemon on the approved list at 
   // the location entered (must be entered exactly as written in GymHuntrBot's original post / the PoGo gym name)
-  // e.g. +raidlast Washington's Crossing
-  if (command === "raidlast") {
+  // e.g. +channel Washington's Crossing
+  if (command === "channel") {
     const enteredLoc = args.join(' ').replace(/\*|\./g, '').trim(); // also remove any asterisks and .'s
     await findRaid(enteredLoc)
         .then(raidInfo => {
@@ -308,8 +311,8 @@ client.on("message", async message => {
   
   // post raid info for the active raid at 
   // the location entered (must be entered exactly as written in GymHuntrBot's original post / the PoGo gym name)
-  // e.g. +raidlast Washington's Crossing
-  if (command === "raidinfo") {
+  // e.g. +info Washington's Crossing
+  if (command === "info") {
     const enteredLoc = args.join(' ').replace(/\*|\./g, '').trim(); // also remove any asterisks and .'s
     await findRaid(enteredLoc)
         .then(raidInfo => {
@@ -428,7 +431,7 @@ function parseGymHuntrbotMsg(lastBotMessage) {
   
   // get the GPS coods and google maps URL
   const gpsCoords = new RegExp('^.*#(.*)','g').exec(emb.url)[1];
-  const gmapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + gpsCoords;
+  const gmapsUrl = gmapsUrlBase + gpsCoords;
   
   const descrip = emb.description;
   const parts = descrip.split('\n'); // location name is parts[0], name is parts[1], time left is parts[3]
@@ -525,8 +528,10 @@ async function postRaidInfo(channel, raidInfo) {
     .setTitle(`${raidInfo.cleanLoc}`)
     .setDescription(`**${raidInfo.pokemonName}**\nUntil **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining})\n**[Open in Google Maps](${raidInfo.gmapsUrl})**`)
     .setThumbnail(`${raidInfo.thumbUrl}`)
-    .setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${raidInfo.gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${raidInfo.gpsCoords}`)
     .setColor(embedColor);
+  if (isMapImageEnabled) {
+    newEmbed.setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${raidInfo.gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${raidInfo.gpsCoords}`);
+  }
   channel.send({embed: newEmbed});
 }
 
@@ -537,8 +542,11 @@ function parseRaidInfo(message) {
   // get the pokemon thumbnail
   const thumbUrl = emb.thumbnail.url;
   
-  // get the GPS coods and google maps URL
-  const gpsCoords = new RegExp('https://maps\\.googleapis\\.com/maps/api/staticmap\\?center=(.*)&zoom.*').exec(emb.image.url)[1];
+  // get the GPS coords and google maps URL
+  var gpsCoords = 'n/a';
+  if (emb.image) {
+    gpsCoords = new RegExp('https://maps\\.googleapis\\.com/maps/api/staticmap\\?center=(.*)&zoom.*').exec(emb.image.url)[1];
+  }
   const gmapsUrl = new RegExp('.*\\[Open in Google Maps\\]\\((.*)\\).*').exec(emb.description)[1];
   
   const parts = emb.description.split('\n');
