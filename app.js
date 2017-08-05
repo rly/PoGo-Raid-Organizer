@@ -7,6 +7,12 @@ const moment = require('moment');
 // Load library for making HTTP GET requests
 const rp = require('request-promise');
 
+// Load sqlite3 library
+const sqlite3 = require("sqlite3").verbose();
+
+// Load sqlite file of gym info generated elsewhere (requires columns "name", "latitude", "longitude"
+const db = new sqlite3.Database('gymdetails');
+
 // Create the main client object with methods to interface with Discord
 const client = new Discord.Client();
 
@@ -326,7 +332,37 @@ client.on("message", async message => {
           }
         });
   }
+  
+  // get a Google Maps url based on the gym name. not case sensitive. periods and asterisks are removed.
+  // e.g. +whereis washington's crossing
+  if (command === "where" || command === "whereis" || command === "map") {
+    const enteredLoc = args.join(' ').replace(/\*/g, '').trim(); // remove any asterisks
+    findRaidCoords(enteredLoc, results => {
+      if (results != null && results.length > 0) {
+        for (row of results) {
+          message.reply(`**${row.name}**: ${gmapsUrlBase}${row.latitude},${row.longitude}`);
+        }
+      } else {
+        message.reply(`Sorry, I couldn't find a gym named **${enteredLoc}**. Please check that you entered the name correctly.`);
+        console.log(`Could not find gym named: ${enteredLoc}`);
+      }
+    });
+  }
 });
+
+// TODO see if async/await can be used here
+function findRaidCoords(enteredLoc, callback) {
+  db.all(`SELECT name,latitude,longitude FROM gym where name like '${enteredLoc}'`, 
+    (err, rows) => {
+      if (err) {
+        console.log(`Database error finding raid: ${err}`);
+        callback(null);
+      } else {
+        callback(rows);
+      }
+    }
+  );
+}
 
 // continuously check raid channels for inactivity
 client.on('ready', (evt) => {
@@ -621,5 +657,12 @@ function parseRaidInfo(message) {
     gmapsLinkName: gmapsLinkName
   }
 }
+
+db.on("error", error => console.log("Database error: ", error));
+
+process.on('SIGINT', () => {
+  db.close();
+  process.exit(0);
+});
 
 client.login(config.token);
