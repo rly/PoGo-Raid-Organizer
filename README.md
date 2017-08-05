@@ -2,11 +2,11 @@
 
 ## Introduction
 
-This Discord bot listens to a Discord channel for raid announcements by the GymHuntrBot (http://discord.pokehuntr.com). It replaces the raid announcement with an enhanced announcement with a Google Maps URL, map image, and raid end time. 
+This Discord bot automatically replaces GymHuntrBot's raid announcements with a post that includes a Google Maps URL to the gym and the raid end time.
 
-In addition, it allows users to get info on an active raid at a given gym in any channel, and also create temporary raid channels for coordinating raid battles. Raid channels that are inactive or are past the raid end time are automatically deleted. 
+In addition, this bot supports useful commands that users can enter in any channel to get information about an active raid at a specified gym or locate a gym/raid,.
 
-Optionally, if GymHuntrBot announces a raid for a pokemon on the approved list, this bot will automatically create a new temporary raid channel for coordinating raid battles. 
+The bot also has the option (currently disabled) to create temporary raid channels for coordinating raid battles. Raid channels that are inactive or are past the raid end time are automatically deleted. 
 
 ## Commands
 
@@ -14,9 +14,11 @@ Key prefix: `+`
 
 ### Raid Info
 
-- `+info exactGymNameWithSpaces` - Looks for raid announcements made by GymHuntrBot in any watched channel for the given gym. The Pokemon does not have to be on the approved list. If the raid is ongoing, the bot makes a post with a Google Maps URL and map image of the gym location. For example, `+info Washington's Crossing`
+- `+info exactGymNameWithSpaces` - Get pokemon name, gym name, Google Maps URL, and time information about the active raid at the specified gym. This uses raid announcements by @GymHuntrBot, so @GymHuntrBot needs to have found the raid first. e.g. `+info Washington's Crossing`
 
-### Channel Management
+- `+where exactGymNameWithSpaces` to get a Google Maps URL to the gym. Also works with `+map` and `+whereis`. e.g. `+where doughnut fountain`
+
+### Channel Management (currently disabled)
 
 - `+channel exactGymNameWithSpaces` - Looks for raid announcements made by GymHuntrBot in any watched channel for the given gym. The Pokemon does not have to be on the approved list. If the raid is ongoing, the bot makes a raid channel and makes a post with a Google Maps URL and map image of the gym location. For example, `+channel Washington's Crossing`
 - `+raid pokemonName locationNoSpaces time` - Creates a raid channel with the given pokemon name, location, and time information. The Pokemon does not have to be on the approved list. Make sure to add a Google Maps URL of the gym location to that channel to help Trainers find it. For example, `+raid lugia princeton-stadium 7:49pm`
@@ -24,7 +26,7 @@ Key prefix: `+`
 - `+enableautoraid` - Enables automatic raid channel creation from GymHuntrBot's posts (see below). Requires `MANAGE_CHANNELS` permission.
 - `+disableautoraid` - Disables automatic raid channel creation from GymHuntrBot's posts (see below). Requires `MANAGE_CHANNELS` permission.
 
-### Approved Pokemon List Management
+### Approved Pokemon List Management (currently disabled)
 
 - `+approve listOfPokemonNames` - These pokemon will be added to the approved list for making raid channels automatically. Requires `MANAGE_CHANNELS` permission.
 - `+disapprove listOfPokemonNames` - These pokemon will be removed to the approved list for making raid channels automatically. Requires `MANAGE_CHANNELS` permission.
@@ -38,11 +40,11 @@ Key prefix: `+`
 
 ## Automatic Actions
 
-- Replaces GymHuntrBot's raid announcement with an enhanced announcement with a Google Maps URL and map image of the gym location.
-- Listens for raid announcements by the GymHuntrBot and creates raid channels based on its posts if the pokemon is approved. Also makes a post with a Google Maps URL and map image of the gym location. [Default off]
-- Deletes raid channels after the raid time has passed.
-- Deletes inactive raid channels (default inactivity time: 2 hours), checking periodically (default: every 5 minutes).
-- Shortens Pokemon names and location names when forming the name of a new raid channel.
+- Replaces GymHuntrBot's raid announcement with an enhanced announcement with a Google Maps URL of the gym location.
+- Collects gym name to latitude/longitude mappings.
+- (currently disabled) Listens for raid announcements by the GymHuntrBot and creates raid channels based on its posts if the pokemon is approved. Also makes a post with a Google Maps URL and map image of the gym location. 
+- (currently disabled) Deletes raid channels after the raid time has passed.
+- (currently disabled) Deletes inactive raid channels (default inactivity time: 2 hours), checking periodically (default: every 5 minutes).
 
 ## Add the bot to your Discord server
 
@@ -52,10 +54,9 @@ Key prefix: `+`
 
 - Currently this runs on a local node.js server.
 
-## Pros and Cons
+## Pros and Cons of Automatic Channel Creation
 
-Use of this bot has some advantages:
-- Users can easily get the exact location and other information about an active raid, preventing confusion.
+Use of the automatic channel creation feature has some advantages:
 - Raid discussions are isolated in single channels. Users can easily see the current status of coordinating a raid by reading the most recent few messages in a raid channel.
 - In raid channels, users can easily see information about the Pokemon name, location (name, Google Maps URL, map image), and end time.
 - Users can easily see which raids are active by looking at the channel list.
@@ -73,11 +74,8 @@ Some of the above disadvantages can be fixed if GymHuntrBot reports raids quickl
 ## TODO
 
 - Implement `+help`.
-- Create database of gym names that gets updated regularly instead of searching through all previous raid announcements. 
-- Implement `+where gymName` with fuzzy matching on gymName to return Google Maps URL (and maybe map)
 - Add instructions for hosting locally
 - Deploy in cloud and add instructions
-
 
 ## Credits
 
