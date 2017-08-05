@@ -22,9 +22,10 @@ const config = require("./config.json");
 // config.prefix contains the message prefix.
 // config.gmapsApiKey contains the bot's Google Maps Static API key
 
+var isCreateChannelOn = false;
 var isAutoRaidChannelOn = false;
 var isReplaceGymHuntrBotPost = true;
-var isPurgeEnabled = false;
+var isPurgeEnabled = true;
 var isMapImageEnabled = false;
 
 const gmapsUrlBase = 'https://www.google.com/maps/search/?api=1&query=';
@@ -209,7 +210,7 @@ client.on("message", async message => {
   }
   
   // list all approved pokemon for raid channel creation
-  if (command === "enableautoraid") {
+  if (isCreateChannelOn && command === "enableautoraid") {
     if (!checkPermissionsManageChannel(message)) return false;
     
     if (isAutoRaidChannelOn)
@@ -221,7 +222,7 @@ client.on("message", async message => {
   }
   
   // list all approved pokemon for raid channel creation
-  if (command === "disableautoraid") {
+  if (isCreateChannelOn && command === "disableautoraid") {
     if (!checkPermissionsManageChannel(message)) return false;
     
     if (!isAutoRaidChannelOn)
@@ -234,7 +235,7 @@ client.on("message", async message => {
   
   // create raid channel for manually entered raid information (i.e. not from gymHuntrBot)
   // e.g. +raid lugia princeton-stadium 7:49pm
-  if (command === "raid") {
+  if (isCreateChannelOn && command === "raid") {
     if (args.length != 3)
       return message.reply(`Sorry, that is the incorrect format. The format for creating a raid channel is "${config.prefix}raid pokemonName locationNoSpaces time", e.g. "${config.prefix}raid lugia princeton-stadium 7:49pm.`);
     
@@ -287,7 +288,7 @@ client.on("message", async message => {
   }
   
   // delete all raid channels
-  if (command === "deleteraids") {
+  if (isCreateChannelOn && command === "deleteraids") {
     if (!checkPermissionsManageChannel(message)) return false;
     
     for (let [key, ch] of message.guild.channels) {
@@ -306,7 +307,7 @@ client.on("message", async message => {
   // make a raid channel for the active raid for a pokemon on the approved list at 
   // the location entered (must be entered exactly as written in GymHuntrBot's original post / the PoGo gym name)
   // e.g. +channel Washington's Crossing
-  if (command === "channel") {
+  if (isCreateChannelOn && command === "channel") {
     const enteredLoc = args.join(' ').replace(/\*|\./g, '').trim(); // also remove any asterisks and .'s
     await findRaid(enteredLoc)
         .then(raidInfo => {
@@ -352,7 +353,7 @@ client.on("message", async message => {
 
 // TODO see if async/await can be used here
 function findRaidCoords(enteredLoc, callback) {
-  db.all(`SELECT name,latitude,longitude FROM gym where name like '${enteredLoc}'`, 
+  db.all('SELECT name,latitude,longitude FROM gym where name like ?', enteredLoc, 
     (err, rows) => {
       if (err) {
         console.log(`Database error finding raid: ${err}`);
@@ -366,10 +367,12 @@ function findRaidCoords(enteredLoc, callback) {
 
 // continuously check raid channels for inactivity
 client.on('ready', (evt) => {
-  checkRaidChannels();
-  if (client.raidChannelCheckInterval)
-    clearInterval(client.raidChannelCheckInterval);
-  client.raidChannelCheckInterval = setInterval(checkRaidChannels, raidChannelCheckInterval);
+  if (isCreateChannelOn) {
+    checkRaidChannels();
+    if (client.raidChannelCheckInterval)
+      clearInterval(client.raidChannelCheckInterval);
+    client.raidChannelCheckInterval = setInterval(checkRaidChannels, raidChannelCheckInterval);
+  }
 });
 
 function checkPermissionsManageChannel(message) {
