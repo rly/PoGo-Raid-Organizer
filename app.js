@@ -33,6 +33,9 @@ const gmapsUrlBase = 'https://www.google.com/maps/search/?api=1&query=';
 // info on GymHuntrBot
 const gymHuntrbotName = "GymHuntrBot";
 
+// info on PokeAlarm Raid notification bot
+const raidBotName = "Raid";
+
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
 var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar', 'mew', 'mewtwo', 'raiku', 'entei', 'suicune', 'ho-oh', 'celebi']; // lower case
 
@@ -99,6 +102,27 @@ client.on("message", async message => {
   if (message.author.bot && message.author.id === gymHuntrbotId && message.embeds[0]) {
     // parse GymHuntrBot raid announcement
     const raidInfo = await parseGymHuntrbotMsg(message);
+    
+    // post enhanced raid info in channel
+    postRaidInfo(message.channel, raidInfo);
+    
+    if (isReplaceGymHuntrBotPost) {
+      // delete the original GymHuntrBot post
+      message.delete().catch(O_o=>{});
+    }
+    
+    if (isAutoRaidChannelOn) {
+      // only create a channel if the pokemon is approved
+      if (approvedPokemon.includes(raidInfo.pokemonName)) {
+        createRaidChannelAndPostInfo(message, raidInfo);
+      }
+    }
+  }
+  
+  // if raid notification occurs, process it here
+  if (message.author.bot && message.author.name === raidBotName && message.embeds[0]) {
+    // parse raid announcement
+    const raidInfo = await parseRaidBotMsg(message);
     
     // post enhanced raid info in channel
     postRaidInfo(message.channel, raidInfo);
@@ -365,6 +389,21 @@ function findRaidCoords(enteredLoc, callback) {
   );
 }
 
+// TODO see if async/await can be used here
+// requires exact match on double values
+function findGymNameFromCoords(latitude, longitude, callback) {
+  db.all('SELECT name,latitude,longitude FROM gym where latitude=? and longitude=?', latitude, longitude, 
+    (err, rows) => {
+      if (err) {
+        console.log(`Database error finding raid: ${err}`);
+        callback(null);
+      } else {
+        callback(rows);
+      }
+    }
+  );
+}
+
 // continuously check raid channels for inactivity
 client.on('ready', (evt) => {
   if (isCreateChannelOn) {
@@ -464,7 +503,7 @@ async function findRaid(enteredLoc) {
   return foundRaidInfo;
 }
 
-// process a GymHuntrBot message - create a new channel for coordinating the raid
+// process a GymHuntrBot message
 async function parseGymHuntrbotMsg(lastBotMessage) {
   const emb = lastBotMessage.embeds[0];
   
@@ -496,8 +535,7 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
        return 'Open in Google Maps';
     });
   
-  const descrip = emb.description;
-  const parts = descrip.split('\n'); // location name is parts[0], name is parts[1], time left is parts[3]
+  const parts = emb.description.split('\n'); // location name is parts[0], name is parts[1], time left is parts[3]
     
   // extract the pokemon name
   const pokemonName = parts[1];
@@ -539,6 +577,98 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
     gpsCoords: gpsCoords, 
     gmapsUrl: gmapsUrl,
     gmapsLinkName: gmapsLinkName
+  }
+}
+
+// process a Raid bot message
+async function parseRaidBotMsg(lastBotMessage) {
+  const emb = lastBotMessage.embeds[0];
+  
+  // get the pokemon thumbnail
+  const thumbUrl = emb.thumbnail.url;
+  
+  // get the GPS coords and google maps URL
+  const gpsCoords = new RegExp('^.*q=(.*)','g').exec(emb.url)[1];
+  const gmapsUrl = gmapsUrlBase + gpsCoords;
+  const gmapsGeocodeOpts = {
+    method: 'GET',
+    uri: 'https://maps.googleapis.com/maps/api/geocode/json',
+    qs: {
+      key: config.gmapsApiKey,
+      latlng: gpsCoords
+    },
+    headers: {
+        'User-Agent': 'Request-Promise'
+    },
+    json: true // Automatically parses the JSON string in the response
+  }
+  const gmapsLinkName = await rp(gmapsGeocodeOpts)
+    .then(response => {
+      const gmapsFAddress = response.results[0].formatted_address;
+      return 'Map: ' + gmapsFAddress.split(',').slice(0, 2).join(',').replace('Township', 'Twp');
+    })
+    .catch(error => {
+       console.log(`Google Maps reverse geocoding failed for coordinates ${gpsCoords}. Error: ${error}`);
+       return 'Open in Google Maps';
+    });
+  
+  // extract the pokemon name
+  const pokemonName = new RegExp('^.*against (.*)','g').exec(emb.title)[1];
+  var shortPokemonName = pokemonName.toLowerCase();
+  for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names
+    shortPokemonName = shortPokemonName.replace(shortPokemonNames[i][0], shortPokemonNames[i][1]);
+  }
+  shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
+  
+  // clean up location name
+  var loc = 'Unknown Gym Name';
+  const gpsCoordsSplit = gpsCoords.split(',');
+  findGymNameFromCoords(gpsCoordsSplit[0], gpsCoordsSplit[1], results => {
+    if (results != null && results.length > 0) {
+      if (results.length == 1)
+        loc = results[0].name;
+      else
+        console.log(`More than one gym entry for coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+    } else {
+      console.log(`Could not find gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+    }
+  });
+  console.log(loc); // TODO async may mess this up
+  
+  const cleanLoc = loc;
+  var shortLoc = loc.toLowerCase().replace(/\s|_/g, '-').replace(/[^\w-]/g, '');
+  for (var i = 0; i < shortLocNames.length; i++) { // shorten location names
+    shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
+  }
+  shortLoc = shortLoc.substring(0, maxLocNameLength);
+  shortLoc = shortLoc.replace(/-/g, ' ').trim().replace(/\s/g, '-'); // trim trailing -
+  
+  const parts = emb.description.split('\n'); 
+  
+  const timeRegex = new RegExp(/The raid is available until (.*) \((\d+)h (\d)m\)/g);
+  const raidTimeParts = timeRegex.exec(parts[0]);
+  const raidTime = moment(moment().format('YYYYMMDD') + ' ' + raidTimeParts[1], 'YYYYMMDD h:mm:ssa', true);
+  const raidTimeStr = raidTime.format('h-mma').toLowerCase();
+  const raidTimeStrColon = raidTime.format('h:mma');
+  const raidTimeRemaining = `${raidTimeParts[2]} h ${raidTimeParts[3]} m remaining`;
+  
+  const movesetRegex = new RegExp(/It has (.*) and (.*) for its attacks/g);
+  const moveset = movesetRegex.exec(parts[1]).shift();
+  
+  return {
+    pokemonName: pokemonName, 
+    shortPokemonName: shortPokemonName, 
+    cleanLoc: cleanLoc, 
+    shortLoc: shortLoc, 
+    raidTime: raidTime, 
+    raidTimeStr: raidTimeStr, 
+    raidTimeStrColon: raidTimeStrColon, 
+    raidTimeRemaining: raidTimeRemaining, 
+    thumbUrl: thumbUrl, 
+    gpsCoords: gpsCoords, 
+    gmapsUrl: gmapsUrl,
+    gmapsLinkName: gmapsLinkName,
+    moveset: moveset
   }
 }
 
@@ -587,9 +717,13 @@ async function createRaidChannel(message, raidInfo) {
 }
 
 async function postRaidInfo(channel, raidInfo) {
+  var movesetStr = '';
+  if (raidInfo.moveset) {
+    movesetStr = `Moveset: ${raidInfo.moveset[0]}, ${raidInfo.moveset[1]}\n`;
+  }
   const newEmbed = new Discord.RichEmbed()
     .setTitle(`${raidInfo.cleanLoc}`)
-    .setDescription(`**${raidInfo.pokemonName}**\nUntil **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining})\n**[${raidInfo.gmapsLinkName}](${raidInfo.gmapsUrl})**`)
+    .setDescription(`**${raidInfo.pokemonName}**\nUntil **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining})\n${movesetStr}**[${raidInfo.gmapsLinkName}](${raidInfo.gmapsUrl})**`)
     .setThumbnail(`${raidInfo.thumbUrl}`)
     .setColor(embedColor);
   if (isMapImageEnabled) {
@@ -644,6 +778,12 @@ function parseRaidInfo(message) {
   const raidTimeStr = raidTime.format('h-mma').toLowerCase();
   const raidTimeStrColon = raidTime.format('h:mma');
   const raidTimeRemaining = raidTimeParts[2];
+  
+  const movesetRegex = new RegExp('Moveset: (.*), (.*)');
+  const movesetParts = movesetRegex.exec(parts[2]);
+  const moveset = [];
+  if (movesetParts.length > 0)
+    moveset = movesetParts.shift();
     
   return {
     pokemonName: pokemonName, 
@@ -656,8 +796,9 @@ function parseRaidInfo(message) {
     raidTimeRemaining: raidTimeRemaining, 
     thumbUrl: thumbUrl, 
     gpsCoords: gpsCoords, 
-    gmapsUrl: gmapsUrl,
-    gmapsLinkName: gmapsLinkName
+    gmapsUrl: gmapsUrl, 
+    gmapsLinkName: gmapsLinkName, 
+    moveset: moveset
   }
 }
 
