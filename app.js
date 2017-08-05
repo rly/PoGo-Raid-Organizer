@@ -323,13 +323,13 @@ client.on("message", async message => {
   // the location entered (must be entered exactly as written in GymHuntrBot's original post / the PoGo gym name)
   // e.g. +info Washington's Crossing
   if (command === "info") {
-    const enteredLoc = args.join(' ').replace(/\*|\./g, '').trim(); // also remove any asterisks and .'s
+    const enteredLoc = args.join(' ').replace(/\*/g, '').trim(); // also remove any asterisks
     await findRaid(enteredLoc)
         .then(raidInfo => {
           if (raidInfo) {
             postRaidInfo(message.channel, raidInfo);
           } else {
-            message.reply(`Sorry, I couldn't find an active raid at ${enteredLoc}. Please check that you entered the location name correctly.`);
+            message.reply(`Sorry, I couldn't find an active raid at **${enteredLoc}**. Please check that you entered the location name correctly.`);
           }
         });
   }
@@ -438,7 +438,7 @@ async function findRaid(enteredLoc) {
       .then(messages => {
         for (let [key, msg] of messages) {
           // only process msg if msg by this bot and in right format
-          if (msg.author.id != client.user.id || !msg.embeds[0])
+          if (msg.author.id != client.user.id || !msg.embeds[0] || msg.embeds[0].color != embedColor)
             continue;
           
           // parse previous post
@@ -509,7 +509,7 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
   
   // clean up location name
   const loc = parts[0];
-  const cleanLoc = loc.replace(/\*|\./g, ''); // remove bold asterisks and trailing .
+  const cleanLoc = loc.replace(/\*/g, '').slice(0, -1); // remove bold asterisks and trailing .
   var shortLoc = loc.toLowerCase().replace(/\s|_/g, '-').replace(/[^\w-]/g, '');
   for (var i = 0; i < shortLocNames.length; i++) { // shorten location names
     shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
@@ -607,7 +607,7 @@ function parseRaidInfo(message) {
   
   // get the GPS coords and google maps URL
   var gpsCoords = 'n/a';
-  if (emb.image) {
+  if (emb.image && emb.image != null) {
     gpsCoords = new RegExp('https://maps\\.googleapis\\.com/maps/api/staticmap\\?center=(.*)&zoom.*').exec(emb.image.url)[1];
   }
   const gmapsLink = new RegExp('.*\\[(.*)\\]\\((.*)\\).*').exec(emb.description)
@@ -617,7 +617,7 @@ function parseRaidInfo(message) {
   const parts = emb.description.split('\n');
   
   // extract the pokemon name
-  const pokemonName = parts[0].replace(/\*|\./g, ''); // remove bold asterisks and trailing .;
+  const pokemonName = parts[0].replace(/\*|\./g, ''); // remove bold asterisks and periods;
   var shortPokemonName = pokemonName.toLowerCase();
   for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names
     shortPokemonName = shortPokemonName.replace(shortPokemonNames[i][0], shortPokemonNames[i][1]);
@@ -626,7 +626,7 @@ function parseRaidInfo(message) {
   
   // clean up location name
   const loc = emb.title;
-  const cleanLoc = loc.replace(/\*|\./g, ''); // remove bold asterisks and trailing .
+  const cleanLoc = loc.replace(/\*/g, ''); // remove bold asterisks
   var shortLoc = loc.toLowerCase().replace(/\s|_/g, '-').replace(/[^\w-]/g, '');
   for (var i = 0; i < shortLocNames.length; i++) { // shorten location names
     shortLoc = shortLoc.replace(shortLocNames[i][0], shortLocNames[i][1]);
