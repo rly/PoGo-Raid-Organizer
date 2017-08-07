@@ -36,6 +36,7 @@ const gymHuntrbotName = "GymHuntrBot";
 
 // info on PokeAlarm Raid notification bot
 const raidBotName = "Raid";
+const raidBotChannel = "matinadesu-raid-bot";
 
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
 var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar', 'mew', 'mewtwo', 'raiku', 'entei', 'suicune', 'ho-oh', 'celebi']; // lower case
@@ -469,6 +470,9 @@ async function findRaid(enteredLoc) {
     if (ch.type != 'text')
       continue;
     
+    if (ch.name != raidBotChannelName) // only parse the raid bot channel
+      continue;
+    
     // search last X messages in all channels -- dangerous!! potentially super slow
     await ch.fetchMessages({limit: raidlastMaxMessagesSearch}) 
       .then(messages => {
@@ -713,7 +717,7 @@ async function createRaidChannel(message, raidInfo) {
 
 async function postRaidInfo(channel, raidInfo) {
   var movesetStr = '';
-  if (raidInfo.moveset) {
+  if (raidInfo.moveset && raidInfo.moveset.length > 0) {
     movesetStr = `Moves: ${raidInfo.moveset[0]} / ${raidInfo.moveset[1]}\n`;
   }
   const newEmbed = new Discord.RichEmbed()
