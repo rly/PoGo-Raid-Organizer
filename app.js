@@ -774,12 +774,12 @@ function parseRaidInfo(message) {
   const raidTimeStrColon = raidTime.format('h:mma');
   const raidTimeRemaining = raidTimeParts[2];
   
-  const movesetRegex = new RegExp('Moveset: (.*), (.*)');
+  const movesetRegex = new RegExp('Moves: (.*) \/ (.*)');
   const movesetParts = movesetRegex.exec(parts[2]);
-  const moveset = [];
-  if (movesetParts.length > 0)
-    moveset = movesetParts.shift();
-    
+  var moveset = [];
+  if (movesetParts && movesetParts.length > 0)
+    moveset = movesetParts.slice(1, 3);
+  
   return {
     pokemonName: pokemonName, 
     shortPokemonName: shortPokemonName, 
