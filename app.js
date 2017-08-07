@@ -123,15 +123,16 @@ client.on("message", async message => {
   // if raid notification occurs, process it here
   if (message.author.bot && message.author.username === raidBotName && message.embeds[0]) {
     // parse raid announcement
-    const raidInfo = await parseRaidBotMsg(message);
-    
-    // post enhanced raid info in channel
-    postRaidInfo(message.channel, raidInfo);
-    
-    if (isReplaceRaidBotPost) {
-      // delete the original bot post
-      message.delete().catch(O_o=>{});
-    }
+    const raidInfo = await parseRaidBotMsg(message)
+    .then(raidInfo => {;
+      // post enhanced raid info in channel
+      postRaidInfo(message.channel, raidInfo);
+      
+      if (isReplaceRaidBotPost) {
+        // delete the original bot post
+        message.delete().catch(O_o=>{});
+      }
+    });
   }
   
   if (message.author.bot) return;
@@ -385,17 +386,19 @@ function findRaidCoords(enteredLoc, callback) {
 
 // TODO see if async/await can be used here
 // requires exact match on double values
-function findGymNameFromCoords(latitude, longitude, callback) {
-  db.all('SELECT name,latitude,longitude FROM gym where latitude=? and longitude=?', latitude, longitude, 
-    (err, rows) => {
-      if (err) {
-        console.log(`Database error finding raid: ${err}`);
-        callback(null);
-      } else {
-        callback(rows);
+function findGymNameFromCoords(latitude, longitude, resolved) {
+  return new Promise(resolved => {
+    db.all('SELECT name,latitude,longitude FROM gym where latitude=? and longitude=?', latitude, longitude, 
+      (err, rows) => {
+        if (err) {
+          console.log(`Database error finding raid: ${err}`);
+          resolved(null);
+        } else {
+          resolved(rows);
+        }
       }
-    }
-  );
+    );
+  });
 }
 
 // continuously check raid channels for inactivity
@@ -607,27 +610,25 @@ async function parseRaidBotMsg(lastBotMessage) {
     });
   
   // extract the pokemon name
-  const pokemonName = new RegExp('^.*against (.*)','g').exec(emb.title)[1];
+  const pokemonName = new RegExp('^.*against (.*)!','g').exec(emb.title)[1];
   var shortPokemonName = pokemonName.toLowerCase();
   for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names
     shortPokemonName = shortPokemonName.replace(shortPokemonNames[i][0], shortPokemonNames[i][1]);
   }
   shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
-  
+
   // clean up location name
   var loc = 'Unknown Gym Name';
   const gpsCoordsSplit = gpsCoords.split(',');
-  findGymNameFromCoords(gpsCoordsSplit[0], gpsCoordsSplit[1], results => {
-    if (results != null && results.length > 0) {
-      if (results.length == 1)
-        loc = results[0].name;
-      else
-        console.log(`More than one gym entry for coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
-    } else {
-      console.log(`Could not find gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
-    }
-  });
-  console.log(loc); // TODO async may mess this up
+  const gymResults = await findGymNameFromCoords(gpsCoordsSplit[0], gpsCoordsSplit[1]);
+  if (gymResults != null && gymResults.length > 0) {
+    if (gymResults.length == 1) {
+      loc = gymResults[0].name;
+    } else
+      console.log(`More than one gym entry for coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+  } else {
+    console.log(`Could not find a gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+  }
   
   const cleanLoc = loc;
   var shortLoc = loc.toLowerCase().replace(/\s|_/g, '-').replace(/[^\w-]/g, '');
@@ -639,7 +640,7 @@ async function parseRaidBotMsg(lastBotMessage) {
   
   const parts = emb.description.split('\n'); 
   
-  const timeRegex = new RegExp(/The raid is available until (.*) \((\d+)h (\d)m\)/g);
+  const timeRegex = new RegExp(/The raid is available until (.*) \((\d+)h (\d+)m\)/g);
   const raidTimeParts = timeRegex.exec(parts[0]);
   const raidTime = moment(moment().format('YYYYMMDD') + ' ' + raidTimeParts[1], 'YYYYMMDD h:mm:ssa', true);
   const raidTimeStr = raidTime.format('h-mma').toLowerCase();
@@ -647,7 +648,7 @@ async function parseRaidBotMsg(lastBotMessage) {
   const raidTimeRemaining = `${raidTimeParts[2]} h ${raidTimeParts[3]} m remaining`;
   
   const movesetRegex = new RegExp(/Attacks: (.*)\/(.*)/g);
-  const moveset = movesetRegex.exec(parts[1]).shift();
+  const moveset = movesetRegex.exec(parts[1]).slice(1,3);
   
   return {
     pokemonName: pokemonName, 
@@ -713,7 +714,7 @@ async function createRaidChannel(message, raidInfo) {
 async function postRaidInfo(channel, raidInfo) {
   var movesetStr = '';
   if (raidInfo.moveset) {
-    movesetStr = `Moveset: ${raidInfo.moveset[0]}, ${raidInfo.moveset[1]}\n`;
+    movesetStr = `Moves: ${raidInfo.moveset[0]} / ${raidInfo.moveset[1]}\n`;
   }
   const newEmbed = new Discord.RichEmbed()
     .setTitle(`${raidInfo.cleanLoc}`)
