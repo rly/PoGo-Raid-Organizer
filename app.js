@@ -400,17 +400,6 @@ function findGymNameFromCoords(latitude, longitude, callback) {
 
 // continuously check raid channels for inactivity
 client.on('ready', (evt) => {
-  for (let [key, ch] of client.channels) { // all channels in all servers
-     if (ch.type === 'text') {
-       ch.fetchMessages({limit: 1})
-        .then(messages => {
-          messages.forEach(message => {
-            console.log(message);
-          });
-        });
-     }
-  }
-  
   if (isCreateChannelOn) {
     checkRaidChannels();
     if (client.raidChannelCheckInterval)
@@ -588,7 +577,6 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
 // process a Raid bot message
 async function parseRaidBotMsg(lastBotMessage) {
   const emb = lastBotMessage.embeds[0];
-  console.log(emb);
   
   // get the pokemon thumbnail
   const thumbUrl = emb.thumbnail.url;
