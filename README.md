@@ -14,13 +14,13 @@ Key prefix: `+`
 
 ### Raid Info
 
-- `+info exactGymNameWithSpaces` - Get pokemon name, gym name, Google Maps URL, and time information about the active raid at the specified gym. This uses raid announcements by @GymHuntrBot, so @GymHuntrBot needs to have found the raid first. e.g. `+info Washington's Crossing`
+- `+info exactGymNameWithSpaces` - Get pokemon name, gym name, Google Maps URL, and time information about the active raid at the specified gym. This uses raid announcements by the Mercer County Top Tier Bot, so that bot needs to have found the raid first. e.g. `+info Washington's Crossing`
 
 - `+where exactGymNameWithSpaces` to get a Google Maps URL to the gym. Also works with `+map` and `+whereis`. e.g. `+where doughnut fountain`
 
 ### Channel Management (currently disabled)
 
-- `+channel exactGymNameWithSpaces` - Looks for raid announcements made by GymHuntrBot in any watched channel for the given gym. The Pokemon does not have to be on the approved list. If the raid is ongoing, the bot makes a raid channel and makes a post with a Google Maps URL and map image of the gym location. For example, `+channel Washington's Crossing`
+- `+channel exactGymNameWithSpaces` - Creates a raid channel for an active raid at the specified gym. This uses raid announcements by the Mercer County Top Tier Bot, so that bot needs to have found the raid first. For example, `+channel Washington's Crossing`
 - `+raid pokemonName locationNoSpaces time` - Creates a raid channel with the given pokemon name, location, and time information. The Pokemon does not have to be on the approved list. Make sure to add a Google Maps URL of the gym location to that channel to help Trainers find it. For example, `+raid lugia princeton-stadium 7:49pm`
 - `+deleteraids` - Deletes all raid channels (as identified by the suffix "__" by default) regardless of state. Requires `MANAGE_CHANNELS` permission.
 - `+enableautoraid` - Enables automatic raid channel creation from GymHuntrBot's posts (see below). Requires `MANAGE_CHANNELS` permission.

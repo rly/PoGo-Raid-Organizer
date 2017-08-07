@@ -36,7 +36,7 @@ const gymHuntrbotName = "GymHuntrBot";
 
 // info on PokeAlarm Raid notification bot
 const raidBotName = "Raid";
-const raidBotChannel = "matinadesu-raid-bot";
+const raidBotChannelName = "matinadesu-raid-bot";
 
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
 var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar', 'mew', 'mewtwo', 'raiku', 'entei', 'suicune', 'ho-oh', 'celebi']; // lower case
