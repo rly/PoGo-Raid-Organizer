@@ -25,6 +25,7 @@ const config = require("./config.json");
 var isCreateChannelOn = false;
 var isAutoRaidChannelOn = false;
 var isReplaceGymHuntrBotPost = true;
+var isReplaceRaidBotPost = true;
 var isPurgeEnabled = true;
 var isMapImageEnabled = false;
 
@@ -120,23 +121,16 @@ client.on("message", async message => {
   }
   
   // if raid notification occurs, process it here
-  if (message.author.bot && message.author.name === raidBotName && message.embeds[0]) {
+  if (message.author.bot && message.author.username === raidBotName && message.embeds[0]) {
     // parse raid announcement
     const raidInfo = await parseRaidBotMsg(message);
     
     // post enhanced raid info in channel
     postRaidInfo(message.channel, raidInfo);
     
-    if (isReplaceGymHuntrBotPost) {
-      // delete the original GymHuntrBot post
+    if (isReplaceRaidBotPost) {
+      // delete the original bot post
       message.delete().catch(O_o=>{});
-    }
-    
-    if (isAutoRaidChannelOn) {
-      // only create a channel if the pokemon is approved
-      if (approvedPokemon.includes(raidInfo.pokemonName)) {
-        createRaidChannelAndPostInfo(message, raidInfo);
-      }
     }
   }
   
@@ -406,6 +400,17 @@ function findGymNameFromCoords(latitude, longitude, callback) {
 
 // continuously check raid channels for inactivity
 client.on('ready', (evt) => {
+  for (let [key, ch] of client.channels) { // all channels in all servers
+     if (ch.type === 'text') {
+       ch.fetchMessages({limit: 1})
+        .then(messages => {
+          messages.forEach(message => {
+            console.log(message);
+          });
+        });
+     }
+  }
+  
   if (isCreateChannelOn) {
     checkRaidChannels();
     if (client.raidChannelCheckInterval)
@@ -583,6 +588,7 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
 // process a Raid bot message
 async function parseRaidBotMsg(lastBotMessage) {
   const emb = lastBotMessage.embeds[0];
+  console.log(emb);
   
   // get the pokemon thumbnail
   const thumbUrl = emb.thumbnail.url;
@@ -652,7 +658,7 @@ async function parseRaidBotMsg(lastBotMessage) {
   const raidTimeStrColon = raidTime.format('h:mma');
   const raidTimeRemaining = `${raidTimeParts[2]} h ${raidTimeParts[3]} m remaining`;
   
-  const movesetRegex = new RegExp(/It has (.*) and (.*) for its attacks/g);
+  const movesetRegex = new RegExp(/Attacks: (.*)\/(.*)/g);
   const moveset = movesetRegex.exec(parts[1]).shift();
   
   return {
