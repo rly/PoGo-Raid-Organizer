@@ -724,7 +724,8 @@ async function postRaidInfo(channel, raidInfo) {
     .setTitle(`${raidInfo.cleanLoc}`)
     .setDescription(`**${raidInfo.pokemonName}**\nUntil **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining})\n${movesetStr}**[${raidInfo.gmapsLinkName}](${raidInfo.gmapsUrl})**`)
     .setThumbnail(`${raidInfo.thumbUrl}`)
-    .setColor(embedColor);
+    .setColor(embedColor)
+    .setURL(`${raidInfo.gmapsUrl}`);
   if (isMapImageEnabled) {
     newEmbed.setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${raidInfo.gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${raidInfo.gpsCoords}`);
   }
