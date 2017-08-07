@@ -2,9 +2,9 @@
 
 ## Introduction
 
-This Discord bot automatically replaces GymHuntrBot's raid announcements with a post that includes a Google Maps URL to the gym and the raid end time.
+This Discord bot automatically replaces GymHuntrBot's and Mercer County Top Tier Bot's raid announcements with a post that includes a Google Maps URL to the gym and the raid end time.
 
-In addition, this bot supports useful commands that users can enter in any channel to get information about an active raid at a specified gym or locate a gym/raid,.
+In addition, this bot supports useful commands that users can enter in any channel to get information about an active raid at a specified gym or locate a gym/raid: `+info` and `+where`.
 
 The bot also has the option (currently disabled) to create temporary raid channels for coordinating raid battles. Raid channels that are inactive or are past the raid end time are automatically deleted. 
 
