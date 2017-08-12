@@ -680,12 +680,14 @@ async function parseRaidBotMsg(lastBotMessage) {
   
   const parts = emb.description.split('\n'); 
   
-  const timeRegex = new RegExp(/The raid is available until (.*) \((\d+)h (\d+)m\)/g);
+  const timeRegex = new RegExp(/The raid is available until (.*) \(((\d+)h )?(\d+)m( (\d+)s)?\)/);
   const raidTimeParts = timeRegex.exec(parts[0]);
   const raidTime = moment(moment().format('YYYYMMDD') + ' ' + raidTimeParts[1], 'YYYYMMDD h:mm:ssa', true);
   const raidTimeStr = raidTime.format('h-mma').toLowerCase();
   const raidTimeStrColon = raidTime.format('h:mma');
-  const raidTimeRemaining = `${raidTimeParts[2]} h ${raidTimeParts[3]} m remaining`;
+  const raidTimeRemainingHs = raidTime.diff(moment(), 'hours');
+  const raidTimeRemainingMs = raidTime.diff(moment(), 'minutes');
+  const raidTimeRemaining = `${raidTimeRemainingHs} h ${raidTimeRemainingMs} m remaining`;
   
   const movesetRegex = new RegExp(/Attacks: (.*)\/(.*)/g);
   const moveset = movesetRegex.exec(parts[1]).slice(1,3);
