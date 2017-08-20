@@ -30,6 +30,7 @@ var isPurgeEnabled = true;
 var isMapImageEnabled = false;
 
 const gmapsUrlBase = 'https://www.google.com/maps/search/?api=1&query=';
+const gmapsState = 'NJ';
 
 // info on GymHuntrBot
 const gymHuntrbotName = "GymHuntrBot";
@@ -529,7 +530,7 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
   const gmapsLinkName = await rp(gmapsGeocodeOpts)
     .then(response => {
       const gmapsFAddress = response.results[0].formatted_address;
-      return 'Map: ' + gmapsFAddress.split(',').slice(0, 2).join(',').replace('Township', 'Twp');
+      return 'Map: ' + gmapsFAddress.substring(0, ', ' + gmapsFAddress.indexOf(gmapsState)).replace('Township', 'Twp');
     })
     .catch(error => {
        console.log(`Google Maps reverse geocoding failed for coordinates ${gpsCoords}. Error: ${error}`);
