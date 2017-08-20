@@ -39,6 +39,8 @@ const gymHuntrbotName = "GymHuntrBot";
 const raidBotName = "Raid";
 const raidBotChannelName = "matinadesu-raid-bot";
 
+const richEmbedSelfName = 'RaidChannelBot';
+
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
 var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar', 'mew', 'mewtwo', 'raiku', 'entei', 'suicune', 'ho-oh', 'celebi']; // lower case
 
@@ -126,7 +128,7 @@ client.on("message", async message => {
   if (message.author.bot && message.author.username === raidBotName && message.embeds[0]) {
     // parse raid announcement
     const raidInfo = await parseRaidBotMsg(message)
-    .then(raidInfo => {;
+    .then(raidInfo => {
       // post enhanced raid info in channel
       postRaidInfo(message.channel, raidInfo);
       
@@ -139,14 +141,23 @@ client.on("message", async message => {
   
   if (message.author.bot) return;
   
+  // Remove any mentions
+  const content = message.content.replace(/<(@|#)\d+>/g, '').trim();
+  // Save the mentions TODO
+  const mentions = message.content.match(/(<(@|#)\d+>)/g);
+  var mentionsStr = '';
+  if (mentions != null) {
+    mentionsStr = mentions.join(' ');
+  }
+  
   // Ignore any message that does not start with our prefix, 
-  if (message.content.indexOf(config.prefix) !== 0) return;
+  if (content.indexOf(config.prefix) !== 0) return;
   
   // Here we separate our "command" name, and our "arguments" for the command. 
   // e.g. if we have the message "+say Is this the real life?" , we'll get the following:
   // command = say
   // args = ["Is", "this", "the", "real", "life?"]
-  const args = message.content.split(/\s+/g);
+  const args = content.split(/\s+/g);
   const command = args.shift().slice(config.prefix.length).toLowerCase();
     
   if (command === "ping") {
@@ -362,7 +373,7 @@ client.on("message", async message => {
     findRaidCoords(enteredLoc, results => {
       if (results != null && results.length > 0) {
         for (row of results) {
-          message.reply(`**${row.name}**: ${gmapsUrlBase}${row.latitude},${row.longitude}`);
+          message.reply(`**${row.name}**: ${gmapsUrlBase}${row.latitude},${row.longitude} ${mentionsStr}`);
         }
       } else {
         message.reply(`Sorry, I couldn't find a gym named **${enteredLoc}**. Please check that you entered the name correctly.`);
@@ -405,6 +416,28 @@ function findGymNameFromCoords(latitude, longitude, resolved) {
 
 // continuously check raid channels for inactivity
 client.on('ready', (evt) => {
+  /*for (let [key, ch] of client.channels) { // all channels in all servers
+    if (ch.type === 'text') {
+      ch.fetchMessages({limit: 1})
+      .then(messages => {
+        messages.forEach(message => {
+          if (message.author.bot && message.author.username === raidBotName && message.embeds[0]) {
+            parseRaidBotMsg(message).then(
+              raidInfo => {
+              // post enhanced raid info in channel
+              postRaidInfo(message.channel, raidInfo);
+              
+              if (isReplaceRaidBotPost) {
+                // delete the original bot post
+                message.delete().catch(O_o=>{});
+              }
+            });
+          }
+        });
+      });
+    }
+  }*/
+  
   if (isCreateChannelOn) {
     checkRaidChannels();
     if (client.raidChannelCheckInterval)
@@ -448,7 +481,7 @@ async function checkRaidChannels() {
       }
         
       // Check if the last message was > X minutes ago or is Y minutes after the raid time
-      ch.fetchMessages({limit: 1})
+      ch.fetchMessages({limit: 2})
           .then(messages => {
             messages.forEach(message => {
               var lastMsgDate = moment(message.createdAt);
@@ -615,7 +648,10 @@ async function parseRaidBotMsg(lastBotMessage) {
     });
   
   // extract the pokemon name
-  const pokemonName = new RegExp('^.*against (.*)!','g').exec(emb.title)[1];
+  const titleParts = new RegExp(/^Level (\d) Raid against (.*)!/g).exec(emb.title);
+  const level = titleParts[1];
+  const eggUrl = `https://raw.githubusercontent.com/kvangent/PokeAlarm/master/icons/egg_${level}.png`;
+  const pokemonName = titleParts[2];
   var shortPokemonName = pokemonName.toLowerCase();
   for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names
     shortPokemonName = shortPokemonName.replace(shortPokemonNames[i][0], shortPokemonNames[i][1]);
@@ -645,12 +681,14 @@ async function parseRaidBotMsg(lastBotMessage) {
   
   const parts = emb.description.split('\n'); 
   
-  const timeRegex = new RegExp(/The raid is available until (.*) \((\d+)h (\d+)m\)/g);
+  const timeRegex = new RegExp(/The raid is available until (.*) \(((\d+)h )?(\d+)m( (\d+)s)?\)/);
   const raidTimeParts = timeRegex.exec(parts[0]);
   const raidTime = moment(moment().format('YYYYMMDD') + ' ' + raidTimeParts[1], 'YYYYMMDD h:mm:ssa', true);
   const raidTimeStr = raidTime.format('h-mma').toLowerCase();
   const raidTimeStrColon = raidTime.format('h:mma');
-  const raidTimeRemaining = `${raidTimeParts[2]} h ${raidTimeParts[3]} m remaining`;
+  const raidTimeRemainingHs = raidTime.diff(moment(), 'hours');
+  const raidTimeRemainingMs = raidTime.diff(moment(), 'minutes') - 60*raidTimeRemainingHs;
+  const raidTimeRemaining = `${raidTimeRemainingHs} h ${raidTimeRemainingMs} m remaining`;
   
   const movesetRegex = new RegExp(/Attacks: (.*)\/(.*)/g);
   const moveset = movesetRegex.exec(parts[1]).slice(1,3);
@@ -668,7 +706,9 @@ async function parseRaidBotMsg(lastBotMessage) {
     gpsCoords: gpsCoords, 
     gmapsUrl: gmapsUrl,
     gmapsLinkName: gmapsLinkName,
-    moveset: moveset
+    moveset: moveset,
+    level: level,
+    eggUrl: eggUrl
   }
 }
 
@@ -721,12 +761,17 @@ async function postRaidInfo(channel, raidInfo) {
   if (raidInfo.moveset && raidInfo.moveset.length > 0) {
     movesetStr = `Moves: ${raidInfo.moveset[0]} / ${raidInfo.moveset[1]}\n`;
   }
+  /*var avatarUrl = '';
+  if (raidInfo.eggUrl) 
+    avatarUrl = raidInfo.eggUrl;*/
+  
   const newEmbed = new Discord.RichEmbed()
     .setTitle(`${raidInfo.cleanLoc}`)
     .setDescription(`**${raidInfo.pokemonName}**\nUntil **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining})\n${movesetStr}**[${raidInfo.gmapsLinkName}](${raidInfo.gmapsUrl})**`)
     .setThumbnail(`${raidInfo.thumbUrl}`)
     .setColor(embedColor)
     .setURL(`${raidInfo.gmapsUrl}`);
+//    .setAuthor(richEmbedSelfName, avatarUrl);
   if (isMapImageEnabled) {
     newEmbed.setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${raidInfo.gpsCoords}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${raidInfo.gpsCoords}`);
   }
@@ -736,6 +781,7 @@ async function postRaidInfo(channel, raidInfo) {
 // parse raid info generated by this bot
 function parseRaidInfo(message) {
   const emb = message.embeds[0];
+  console.log(emb);
   
   // get the pokemon thumbnail
   const thumbUrl = emb.thumbnail.url;
