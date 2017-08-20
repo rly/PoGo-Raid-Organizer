@@ -686,7 +686,7 @@ async function parseRaidBotMsg(lastBotMessage) {
   const raidTimeStr = raidTime.format('h-mma').toLowerCase();
   const raidTimeStrColon = raidTime.format('h:mma');
   const raidTimeRemainingHs = raidTime.diff(moment(), 'hours');
-  const raidTimeRemainingMs = raidTime.diff(moment(), 'minutes');
+  const raidTimeRemainingMs = raidTime.diff(moment(), 'minutes') - 60*raidTimeRemainingHs;
   const raidTimeRemaining = `${raidTimeRemainingHs} h ${raidTimeRemainingMs} m remaining`;
   
   const movesetRegex = new RegExp(/Attacks: (.*)\/(.*)/g);
