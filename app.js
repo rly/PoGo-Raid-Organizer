@@ -694,10 +694,16 @@ async function parseRaidBotMsg(lastBotMessage) {
   const moveset = movesetRegex.exec(parts[1]).slice(1,3);
   
   var discussChannelID = '';
-  if (parts.length == 6) { // there is channel info
+  /*if (parts.length == 6) { // there is channel info
     const discussChannel = lastBotMessage.guild.channels.find("name", parts[5]);
     if (discussChannel)
       discussChannelID = discussChannel.id;
+  }*/
+  var discussChannelName = '';
+  if (parts.length == 6) { // there is channel info
+    const discussChannel = lastBotMessage.guild.channels.find("name", parts[5]);
+    if (discussChannel)
+      discussChannelName = parts[5];
   }
   
   return {
@@ -716,7 +722,8 @@ async function parseRaidBotMsg(lastBotMessage) {
     moveset: moveset,
     level: level,
     eggUrl: eggUrl,
-    discussChannelID: discussChannelID
+    discussChannelID: discussChannelID,
+    discussChannelName: discussChannelName
   }
 }
 
@@ -773,8 +780,11 @@ async function postRaidInfo(channel, raidInfo) {
   if (raidInfo.eggUrl) 
     avatarUrl = raidInfo.eggUrl;*/
   var discussChannelStr = '';
-  if (raidInfo.discussChannelID && raidInfo.discussChannelID.length > 0) {
-    discussChannelStr = `\nDiscuss: <#${raidInfo.discussChannelID}>`;
+  //if (raidInfo.discussChannelID && raidInfo.discussChannelID.length > 0) {
+    //discussChannelStr = `\nDiscuss: <#${raidInfo.discussChannelID}>`;
+  //}
+  if (raidInfo.discussChannelName && raidInfo.discussChannelName.length > 0) {
+    discussChannelStr = `\nDiscuss in: ${raidInfo.discussChannelName}`;
   }
   
   const newEmbed = new Discord.RichEmbed()
@@ -844,10 +854,16 @@ function parseRaidInfo(message) {
     moveset = movesetParts.slice(1, 3);
   
   var discussChannelID = '';
-  if (parts.length == 5) { // there is channel info
+  /*if (parts.length == 5) { // there is channel info
     const parsedChannel = new RegExp(/Discuss: <#(\d+)>/).exec(parts[4]);
     if (parsedChannel)
       discussChannelID = parsedChannel[1];
+  }*/
+  var discussChannelName = '';
+  if (parts.length == 5) { // there is channel info
+    const parsedChannel = new RegExp(/Discuss in: (.*)/).exec(parts[4]);
+    if (parsedChannel)
+      discussChannelName = parsedChannel[1];
   }
   
   return {
@@ -864,7 +880,8 @@ function parseRaidInfo(message) {
     gmapsUrl: gmapsUrl, 
     gmapsLinkName: gmapsLinkName, 
     moveset: moveset,
-    discussChannelID: discussChannelID
+    discussChannelID: discussChannelID,
+    discussChannelName: discussChannelName
   }
 }
 
