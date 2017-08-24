@@ -563,7 +563,7 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
   const gmapsLinkName = await rp(gmapsGeocodeOpts)
     .then(response => {
       const gmapsFAddress = response.results[0].formatted_address;
-      return 'Map: ' + gmapsFAddress.substring(0, ', ' + gmapsFAddress.indexOf(gmapsState)).replace('Township', 'Twp');
+      return gmapsFAddress.substring(0, ', ' + gmapsFAddress.indexOf(gmapsState)).replace('Township', 'Twp');
     })
     .catch(error => {
        console.log(`Google Maps reverse geocoding failed for coordinates ${gpsCoords}. Error: ${error}`);
@@ -640,7 +640,7 @@ async function parseRaidBotMsg(lastBotMessage) {
   const gmapsLinkName = await rp(gmapsGeocodeOpts)
     .then(response => {
       const gmapsFAddress = response.results[0].formatted_address;
-      return 'Map: ' + gmapsFAddress.split(',').slice(0, 2).join(',').replace('Township', 'Twp');
+      return gmapsFAddress.split(',').slice(0, 2).join(',').replace('Township', 'Twp');
     })
     .catch(error => {
        console.log(`Google Maps reverse geocoding failed for coordinates ${gpsCoords}. Error: ${error}`);
@@ -779,7 +779,7 @@ async function postRaidInfo(channel, raidInfo) {
   
   const newEmbed = new Discord.RichEmbed()
     .setTitle(`${raidInfo.cleanLoc}`)
-    .setDescription(`**${raidInfo.pokemonName}**\nUntil **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining})\n${movesetStr}**[${raidInfo.gmapsLinkName}](${raidInfo.gmapsUrl})**${discussChannelStr}`)
+    .setDescription(`**${raidInfo.pokemonName}**\nUntil **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining})\n${movesetStr}Map: **[${raidInfo.gmapsLinkName}](${raidInfo.gmapsUrl})**${discussChannelStr}`)
     .setThumbnail(`${raidInfo.thumbUrl}`)
     .setColor(embedColor)
     .setURL(`${raidInfo.gmapsUrl}`);
