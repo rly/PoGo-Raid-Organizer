@@ -418,7 +418,7 @@ function findGymNameFromCoords(latitude, longitude, resolved) {
 client.on('ready', (evt) => {
   /*for (let [key, ch] of client.channels) { // all channels in all servers
     if (ch.type === 'text') {
-      ch.fetchMessages({limit: 20})
+      ch.fetchMessages({limit: 30})
       .then(messages => {
         messages.forEach(message => {
           if (message.author.bot && message.author.username === raidBotName && message.embeds[0]) {
@@ -429,7 +429,7 @@ client.on('ready', (evt) => {
               
               if (isReplaceRaidBotPost) {
                 // delete the original bot post
-                //message.delete().catch(O_o=>{});
+                message.delete().catch(O_o=>{});
               }
             });
           }
@@ -694,16 +694,13 @@ async function parseRaidBotMsg(lastBotMessage) {
   const moveset = movesetRegex.exec(parts[1]).slice(1,3);
   
   var discussChannelID = '';
-  /*if (parts.length == 6) { // there is channel info
-    const discussChannel = lastBotMessage.guild.channels.find("name", parts[5]);
-    if (discussChannel)
-      discussChannelID = discussChannel.id;
-  }*/
   var discussChannelName = '';
   if (parts.length == 6) { // there is channel info
     const discussChannel = lastBotMessage.guild.channels.find("name", parts[5]);
-    if (discussChannel)
+    if (discussChannel) {
       discussChannelName = parts[5];
+      //discussChannelID = discussChannel.id;
+    }
   }
   
   return {
