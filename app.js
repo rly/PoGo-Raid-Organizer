@@ -781,7 +781,7 @@ async function postRaidInfo(channel, raidInfo) {
     //discussChannelStr = `\nDiscuss: <#${raidInfo.discussChannelID}>`;
   //}
   if (raidInfo.discussChannelName && raidInfo.discussChannelName.length > 0) {
-    discussChannelStr = `\nDiscuss in: ${raidInfo.discussChannelName}`;
+    discussChannelStr = `\nDiscuss in: #${raidInfo.discussChannelName}`;
   }
   
   const newEmbed = new Discord.RichEmbed()
@@ -858,7 +858,7 @@ function parseRaidInfo(message) {
   }*/
   var discussChannelName = '';
   if (parts.length == 5) { // there is channel info
-    const parsedChannel = new RegExp(/Discuss in: (.*)/).exec(parts[4]);
+    const parsedChannel = new RegExp(/Discuss in: #(.*)/).exec(parts[4]);
     if (parsedChannel)
       discussChannelName = parsedChannel[1];
   }
