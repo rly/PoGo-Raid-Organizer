@@ -563,7 +563,7 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
   const gmapsLinkName = await rp(gmapsGeocodeOpts)
     .then(response => {
       const gmapsFAddress = response.results[0].formatted_address;
-      return gmapsFAddress.substring(0, ', ' + gmapsFAddress.indexOf(gmapsState)).replace('Township', 'Twp');
+      return gmapsFAddress.split(',').slice(0, 2).join(',').replace('Township', 'Twp');
     })
     .catch(error => {
        console.log(`Google Maps reverse geocoding failed for coordinates ${gpsCoords}. Error: ${error}`);
