@@ -107,7 +107,7 @@ client.on("message", async message => {
   const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
   if (message.author.bot && message.author.id === gymHuntrbotId && message.embeds[0]) {
     // parse GymHuntrBot raid announcement
-    const raidInfo = await parseGymHuntrbotMsg(message);
+    const raidInfo = await parseGymHuntrbotMsg(message)
     .then(raidInfo => {
       // post enhanced raid info in channel
       postRaidInfo(message.channel, raidInfo);
