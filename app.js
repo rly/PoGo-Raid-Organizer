@@ -108,14 +108,15 @@ client.on("message", async message => {
   if (message.author.bot && message.author.id === gymHuntrbotId && message.embeds[0]) {
     // parse GymHuntrBot raid announcement
     const raidInfo = await parseGymHuntrbotMsg(message);
-    
-    // post enhanced raid info in channel
-    postRaidInfo(message.channel, raidInfo);
-    
-    if (isReplaceGymHuntrBotPost) {
-      // delete the original GymHuntrBot post
-      message.delete().catch(O_o=>{});
-    }
+    .then(raidInfo => {
+      // post enhanced raid info in channel
+      postRaidInfo(message.channel, raidInfo);
+      
+      if (isReplaceGymHuntrBotPost) {
+        // delete the original bot post
+        message.delete().catch(O_o=>{});
+      }
+    });
     
     if (isAutoRaidChannelOn) {
       // only create a channel if the pokemon is approved
