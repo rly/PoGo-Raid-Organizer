@@ -36,7 +36,8 @@ const gmapsState = 'NJ';
 const gymHuntrbotName = "GymHuntrBot";
 
 // info on PokeAlarm Raid notification bot
-const raidBotName = "Raid";
+const raidBotName1 = "Raid";
+const raidBotName2 = "Egg";
 const raidBotChannelName = "matinadesu-raid-bot";
 
 const richEmbedSelfName = 'RaidChannelBot';
@@ -125,7 +126,7 @@ client.on("message", async message => {
   }
   
   // if raid notification occurs, process it here
-  if (message.author.bot && message.author.username === raidBotName && message.embeds[0]) {
+  if (message.author.bot && (message.author.username === raidBotName1 || message.author.username === raidBotName2) && message.embeds[0]) {
     // parse raid announcement
     const raidInfo = await parseRaidBotMsg(message)
     .then(raidInfo => {
@@ -416,12 +417,12 @@ function findGymNameFromCoords(latitude, longitude, resolved) {
 
 // continuously check raid channels for inactivity
 client.on('ready', (evt) => {
-  /*for (let [key, ch] of client.channels) { // all channels in all servers
+  for (let [key, ch] of client.channels) { // all channels in all servers
     if (ch.type === 'text') {
-      ch.fetchMessages({limit: 30})
+      ch.fetchMessages({limit: 10})
       .then(messages => {
         messages.forEach(message => {
-          if (message.author.bot && message.author.username === raidBotName && message.embeds[0]) {
+          if (message.author.bot && (message.author.username === raidBotName1 || message.author.username === raidBotName2) && message.embeds[0]) {
             parseRaidBotMsg(message).then(
               raidInfo => {
               // post enhanced raid info in channel
@@ -429,14 +430,36 @@ client.on('ready', (evt) => {
               
               if (isReplaceRaidBotPost) {
                 // delete the original bot post
-                message.delete().catch(O_o=>{});
+                //message.delete().catch(O_o=>{});
               }
             });
           }
         });
       });
     }
-  }*/
+  }
+  
+  for (let [key, ch] of client.channels) { // all channels in all servers
+    if (ch.type === 'text') {
+      ch.fetchMessages({limit: 10})
+      .then(messages => {
+        messages.forEach(message => {
+          if (message.author.bot && message.author.username === gymHuntrbotName && message.embeds[0]) {
+            parseGymHuntrbotMsg(message).then(
+              raidInfo => {
+              // post enhanced raid info in channel
+              postRaidInfo(message.channel, raidInfo);
+              
+              if (isReplaceGymHuntrBotPost) {
+                // delete the original bot post
+                //message.delete().catch(O_o=>{});
+              }
+            });
+          }
+        });
+      });
+    }
+  }
   
   if (isCreateChannelOn) {
     checkRaidChannels();
@@ -570,15 +593,7 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
        return 'Open in Google Maps';
     });
   
-  const parts = emb.description.split('\n'); // location name is parts[0], name is parts[1], time left is parts[3]
-    
-  // extract the pokemon name
-  const pokemonName = parts[1];
-  var shortPokemonName = pokemonName.toLowerCase();
-  for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names
-    shortPokemonName = shortPokemonName.replace(shortPokemonNames[i][0], shortPokemonNames[i][1]);
-  }
-  shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
+  const parts = emb.description.split('\n'); // if raid, location name is parts[0], name is parts[1], time left is parts[3]
   
   // clean up location name
   const loc = parts[0];
@@ -590,10 +605,30 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
   shortLoc = shortLoc.substring(0, maxLocNameLength);
   shortLoc = shortLoc.replace(/-/g, ' ').trim().replace(/\s/g, '-'); // trim trailing -
   
-  // extract the time remaining and compute the end time
-  // don't include seconds -- effectively round down
-  const timeRegex = new RegExp(/\*Raid Ending: (\d+) hours (\d+) min \d+ sec\*/g);
-  const raidTimeParts = timeRegex.exec(parts[3]);
+  var pokemonName, shortPokemonName, timeRegex, raidTimeParts, timeStrHeader;
+  // check for egg vs raid
+  const titleEggMatch = new RegExp(/Level (\d) Raid is starting soon!/).exec(emb.title);
+  if (titleEggMatch) {
+    pokemonName = `Level ${titleEggMatch[1]} Egg`;
+    timeRegex = new RegExp(/\*Raid Starting: (\d+) hours (\d+) min \d+ sec\*/g);
+    raidTimeParts = timeRegex.exec(parts[1]);
+    timeStrHeader = "Hatching at";
+  } else {
+    // extract the pokemon name
+    pokemonName = parts[1];
+    shortPokemonName = pokemonName.toLowerCase();
+    for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names
+      shortPokemonName = shortPokemonName.replace(shortPokemonNames[i][0], shortPokemonNames[i][1]);
+    }
+    shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
+    
+    // extract the time remaining and compute the end time
+    // don't include seconds -- effectively round down
+    timeRegex = new RegExp(/\*Raid Ending: (\d+) hours (\d+) min \d+ sec\*/g);
+    raidTimeParts = timeRegex.exec(parts[3]);
+    timeStrHeader = "Until";
+  }
+  
   const raidTime = moment(lastBotMessage.createdAt).add(raidTimeParts[1], 'h').add(raidTimeParts[2], 'm');
   const raidTimeStr = raidTime.format('h-mma').toLowerCase();
   const raidTimeStrColon = raidTime.format('h:mma');
@@ -608,6 +643,7 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
     raidTimeStr: raidTimeStr, 
     raidTimeStrColon: raidTimeStrColon, 
     raidTimeRemaining: raidTimeRemaining, 
+    timeStrHeader: timeStrHeader,
     thumbUrl: thumbUrl, 
     gpsCoords: gpsCoords, 
     gmapsUrl: gmapsUrl,
@@ -620,7 +656,7 @@ async function parseRaidBotMsg(lastBotMessage) {
   const emb = lastBotMessage.embeds[0];
   
   // get the pokemon thumbnail
-  const thumbUrl = emb.thumbnail.url;
+  var thumbUrl = emb.thumbnail.url;
   
   // get the GPS coords and google maps URL
   const gpsCoords = new RegExp('^.*q=(.*)','g').exec(emb.url)[1];
@@ -647,17 +683,6 @@ async function parseRaidBotMsg(lastBotMessage) {
        return 'Open in Google Maps';
     });
   
-  // extract the pokemon name
-  const titleParts = new RegExp(/^Level (\d) Raid against (.*)!/g).exec(emb.title);
-  const level = titleParts[1];
-  const eggUrl = `https://raw.githubusercontent.com/kvangent/PokeAlarm/master/icons/egg_${level}.png`;
-  const pokemonName = titleParts[2];
-  var shortPokemonName = pokemonName.toLowerCase();
-  for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names
-    shortPokemonName = shortPokemonName.replace(shortPokemonNames[i][0], shortPokemonNames[i][1]);
-  }
-  shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
-  
   // clean up location name
   var loc = 'Unknown Gym Name';
   const gpsCoordsSplit = gpsCoords.split(',');
@@ -681,7 +706,36 @@ async function parseRaidBotMsg(lastBotMessage) {
   
   const parts = emb.description.split('\n'); 
   
-  const timeRegex = new RegExp(/The raid is available until (.*) \(((\d+)h )?(\d+)m( (\d+)s)?\)/);
+  var pokemonName, shortPokemonName, timeRegex, timeStrHeader, level, eggUrl, moveset;
+  // check for egg vs raid
+  const titleEggMatch = new RegExp(/A Level (\d) raid is incoming!/).exec(emb.title);
+  if (titleEggMatch) {
+    pokemonName = `Level ${titleEggMatch[1]} Egg`;
+    level = titleEggMatch[1];
+    eggUrl = `https://raw.githubusercontent.com/kvangent/PokeAlarm/master/icons/egg_${level}.png`;
+    timeRegex = new RegExp(/The egg will hatch at (.*) \(((\d+)h )?(\d+)m( (\d+)s)?\)/);
+    timeStrHeader = "Hatching at";
+    thumbUrl = `https://raw.githubusercontent.com/PokeHuntr/Assets/master/raidlevels/${level}.png`;
+    
+  } else {
+    // extract the pokemon name
+    const titleParts = new RegExp(/^Level (\d) Raid against (.*)!/g).exec(emb.title);
+    level = titleParts[1];
+    eggUrl = `https://raw.githubusercontent.com/kvangent/PokeAlarm/master/icons/egg_${level}.png`;
+    pokemonName = titleParts[2];
+    shortPokemonName = pokemonName.toLowerCase();
+    for (var i = 0; i < shortPokemonNames.length; i++) { // shorten pokemon names
+      shortPokemonName = shortPokemonName.replace(shortPokemonNames[i][0], shortPokemonNames[i][1]);
+    }
+    shortPokemonName = shortPokemonName.substring(0, maxPokemonNameLength);
+    
+    timeRegex = new RegExp(/The raid is available until (.*) \(((\d+)h )?(\d+)m( (\d+)s)?\)/);
+    timeStrHeader = "Until";
+    
+    const movesetRegex = new RegExp(/Attacks: (.*)\/(.*)/g);
+    moveset = movesetRegex.exec(parts[1]).slice(1,3);
+  }
+  
   const raidTimeParts = timeRegex.exec(parts[0]);
   const raidTime = moment(moment().format('YYYYMMDD') + ' ' + raidTimeParts[1], 'YYYYMMDD h:mm:ssa', true);
   const raidTimeStr = raidTime.format('h-mma').toLowerCase();
@@ -690,15 +744,16 @@ async function parseRaidBotMsg(lastBotMessage) {
   const raidTimeRemainingMs = raidTime.diff(moment(), 'minutes') - 60*raidTimeRemainingHs;
   const raidTimeRemaining = `${raidTimeRemainingHs} h ${raidTimeRemainingMs} m remaining`;
   
-  const movesetRegex = new RegExp(/Attacks: (.*)\/(.*)/g);
-  const moveset = movesetRegex.exec(parts[1]).slice(1,3);
-  
-  var discussChannelID = '';
-  var discussChannelName = '';
-  if (parts.length == 6) { // there is channel info
-    const discussChannel = lastBotMessage.guild.channels.find("name", parts[5]);
-    if (discussChannel) {
-      discussChannelName = parts[5];
+  var discussChannelID, discussChannelName, discussTextIndex;
+  if (titleEggMatch) {
+    discussTextIndex = 4;
+  } else {
+    discussTextIndex = 5;
+  }
+  if (parts.length == discussTextIndex + 1) { // there is channel info
+    const foundChannel = lastBotMessage.guild.channels.find("name", parts[discussTextIndex]);
+    if (foundChannel) {
+      discussChannelName = parts[discussTextIndex];
       //discussChannelID = discussChannel.id;
     }
   }
@@ -712,6 +767,7 @@ async function parseRaidBotMsg(lastBotMessage) {
     raidTimeStr: raidTimeStr, 
     raidTimeStrColon: raidTimeStrColon, 
     raidTimeRemaining: raidTimeRemaining, 
+    timeStrHeader: timeStrHeader,
     thumbUrl: thumbUrl, 
     gpsCoords: gpsCoords, 
     gmapsUrl: gmapsUrl,
@@ -786,7 +842,7 @@ async function postRaidInfo(channel, raidInfo) {
   
   const newEmbed = new Discord.RichEmbed()
     .setTitle(`${raidInfo.cleanLoc}`)
-    .setDescription(`**${raidInfo.pokemonName}**\nUntil **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining})\n${movesetStr}Map: **[${raidInfo.gmapsLinkName}](${raidInfo.gmapsUrl})**${discussChannelStr}`)
+    .setDescription(`**${raidInfo.pokemonName}**\n${raidInfo.timeStrHeader} **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining})\n${movesetStr}Map: **[${raidInfo.gmapsLinkName}](${raidInfo.gmapsUrl})**${discussChannelStr}`)
     .setThumbnail(`${raidInfo.thumbUrl}`)
     .setColor(embedColor)
     .setURL(`${raidInfo.gmapsUrl}`);
@@ -835,14 +891,15 @@ function parseRaidInfo(message) {
   
   // extract the time remaining and compute the end time
   // don't include seconds -- effectively round down
-  const timeRegex = new RegExp('Until \\*\\*(.*)\\*\\* \\((.*)\\)');
+  const timeRegex = new RegExp('(.*) \\*\\*(.*)\\*\\* \\((.*)\\)');
   const raidTimeParts = timeRegex.exec(parts[1]);
-  const raidTimeInput = raidTimeParts[1].toLowerCase();
+  const raidTimeInput = raidTimeParts[2].toLowerCase();
   // use current date but set time (use format e.g. "11:30pm")
   const raidTime = moment(moment().format('YYYYMMDD') + ' ' + raidTimeInput, 'YYYYMMDD h:mma', true);
   const raidTimeStr = raidTime.format('h-mma').toLowerCase();
   const raidTimeStrColon = raidTime.format('h:mma');
-  const raidTimeRemaining = raidTimeParts[2];
+  const raidTimeRemaining = raidTimeParts[3];
+  const timeStrHeader = raidTimeParts[1];
   
   const movesetRegex = new RegExp('Moves: (.*) \/ (.*)');
   const movesetParts = movesetRegex.exec(parts[2]);
@@ -850,17 +907,18 @@ function parseRaidInfo(message) {
   if (movesetParts && movesetParts.length > 0)
     moveset = movesetParts.slice(1, 3);
   
-  var discussChannelID = '';
-  /*if (parts.length == 5) { // there is channel info
-    const parsedChannel = new RegExp(/Discuss: <#(\d+)>/).exec(parts[4]);
-    if (parsedChannel)
-      discussChannelID = parsedChannel[1];
-  }*/
-  var discussChannelName = '';
-  if (parts.length == 5) { // there is channel info
-    const parsedChannel = new RegExp(/Discuss in: #(.*)/).exec(parts[4]);
-    if (parsedChannel)
+  var discussChannelID, discussChannelName, discussTextIndex;
+  if (timeStrHeader == "Hatching at") {
+    discussTextIndex = 3;
+  } else {
+    discussTextIndex = 4;
+  }
+  if (parts.length == discussTextIndex + 1) { // there is channel info
+    const parsedChannel = new RegExp(/Discuss in: #(.*)/).exec(parts[discussTextIndex]);
+    if (parsedChannel) {
       discussChannelName = parsedChannel[1];
+      //discussChannelID = discussChannel.id;
+    }
   }
   
   return {
@@ -872,6 +930,7 @@ function parseRaidInfo(message) {
     raidTimeStr: raidTimeStr, 
     raidTimeStrColon: raidTimeStrColon, 
     raidTimeRemaining: raidTimeRemaining, 
+    timeStrHeader: timeStrHeader,
     thumbUrl: thumbUrl, 
     gpsCoords: gpsCoords, 
     gmapsUrl: gmapsUrl, 
