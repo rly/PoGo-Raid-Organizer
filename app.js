@@ -417,7 +417,7 @@ function findGymNameFromCoords(latitude, longitude, resolved) {
 
 // continuously check raid channels for inactivity
 client.on('ready', (evt) => {
-  for (let [key, ch] of client.channels) { // all channels in all servers
+  /*for (let [key, ch] of client.channels) { // all channels in all servers
     if (ch.type === 'text') {
       ch.fetchMessages({limit: 10})
       .then(messages => {
@@ -430,7 +430,7 @@ client.on('ready', (evt) => {
               
               if (isReplaceRaidBotPost) {
                 // delete the original bot post
-                //message.delete().catch(O_o=>{});
+                message.delete().catch(O_o=>{});
               }
             });
           }
@@ -452,14 +452,14 @@ client.on('ready', (evt) => {
               
               if (isReplaceGymHuntrBotPost) {
                 // delete the original bot post
-                //message.delete().catch(O_o=>{});
+                message.delete().catch(O_o=>{});
               }
             });
           }
         });
       });
     }
-  }
+  }*/
   
   if (isCreateChannelOn) {
     checkRaidChannels();
