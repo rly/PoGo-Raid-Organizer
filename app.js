@@ -499,9 +499,9 @@ function checkPermissionsManageMessages(message) {
   return true;
 }
 
+// TODO change this to check whether the bot has SEND MESSAGES permission
 function checkPermissionsSendMessages(message) {
   if (!message.channel.permissionsFor(message.member).has('SEND_MESSAGES')) {
-    message.reply(`Sorry, you do not have permission to do this.`);
     return false;
   }
   return true;
