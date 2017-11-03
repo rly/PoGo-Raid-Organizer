@@ -146,7 +146,7 @@ client.on("message", async message => {
     });
   }
   
-  if (message.author.bot && message.author.username === huntrbotName && message.embeds[0] && checkPermissionsSendMessages(message)) {
+  if (message.author.bot && message.author.username === huntrbotName && message.embeds[0]) {
     // parse HuntrBot spawn announcement
     await parseHuntrbotMsg(message)
         .catch(error => {
