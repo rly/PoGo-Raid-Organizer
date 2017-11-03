@@ -35,12 +35,17 @@ const gmapsState = 'NJ';
 // info on GymHuntrBot
 const gymHuntrbotName = "GymHuntrBot";
 
+// info on GymHuntrBot
+const huntrbotName = "HuntrBot";
+
 // info on PokeAlarm Raid notification bot
 const raidBotName1 = "Raid";
 const raidBotName2 = "Egg";
 const raidBotChannelName = "matinadesu-raid-bot";
 
 const richEmbedSelfName = 'RaidChannelBot';
+
+var approvedRareSpawnPokemon = ['Unown', 'Tyranitar', 'Blissey', 'Porygon', 'Chansey', 'Dragonite', 'Ampharos', 'Machamp', 'Lapras', 'Charizard', 'Snorlax', 'Gyarados', 'Togetic', 'Pidgey'];
 
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
 var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar', 'mew', 'mewtwo', 'raiku', 'entei', 'suicune', 'ho-oh', 'celebi']; // lower case
@@ -139,6 +144,11 @@ client.on("message", async message => {
         message.delete().catch(O_o=>{});
       }
     });
+  }
+  
+  if (message.author.bot && message.author.username === huntrbotName && message.embeds[0]) {
+    // parse HuntrBot spawn announcement
+    parseHuntrbotMsg(message);
   }
   
   if (message.author.bot) return;
@@ -939,6 +949,17 @@ function parseRaidInfo(message) {
     moveset: moveset,
     discussChannelID: discussChannelID,
     discussChannelName: discussChannelName
+  }
+}
+
+// process a HuntrBot message
+async function parseHuntrbotMsg(lastBotMessage) {
+  const emb = lastBotMessage.embeds[0];
+  const titleMatch = new RegExp(/A wild (.*) \((\d+)\) has appeared!/).exec(emb.title);
+  if (titleMatch && approvedRareSpawnPokemon.includes(titleMatch[1])) {
+    lastBotMessage.channel.send(`@everyone A wild ${titleMatch[1]} has appeared in the Princeton area! See above.`);
+  } else if (!titleMatch) {
+    console.log(`Could not parse Huntrbot message: ${emb.title}`);
   }
 }
 
