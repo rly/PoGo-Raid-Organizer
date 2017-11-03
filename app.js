@@ -146,7 +146,7 @@ client.on("message", async message => {
     });
   }
   
-  if (message.author.bot && message.author.username === huntrbotName && message.embeds[0]) {
+  if (message.author.bot && message.author.username === huntrbotName && message.embeds[0] && checkPermissionsSendMessages(message)) {
     // parse HuntrBot spawn announcement
     await parseHuntrbotMsg(message)
         .catch(error => {
@@ -493,6 +493,14 @@ function checkPermissionsManageChannel(message) {
 
 function checkPermissionsManageMessages(message) {
   if (!message.channel.permissionsFor(message.member).has('MANAGE_MESSAGES')) {
+    message.reply(`Sorry, you do not have permission to do this.`);
+    return false;
+  }
+  return true;
+}
+
+function checkPermissionsSendMessages(message) {
+  if (!message.channel.permissionsFor(message.member).has('SEND_MESSAGES')) {
     message.reply(`Sorry, you do not have permission to do this.`);
     return false;
   }
