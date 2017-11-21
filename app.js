@@ -968,7 +968,7 @@ async function parseHuntrbotMsg(lastBotMessage) {
   const emb = lastBotMessage.embeds[0];
   const titleMatch = new RegExp(/A wild (.*) \((\d+)\) has appeared!/).exec(emb.title);
   if (titleMatch && approvedRareSpawnPokemon.includes(titleMatch[1])) {
-    lastBotMessage.channel.send(`@everyone A wild ${titleMatch[1]} has appeared in the Princeton area! See above.`);
+    lastBotMessage.channel.send(`@everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
   } else if (!titleMatch) {
     console.log(`Could not parse Huntrbot message: ${emb.title}`);
   }
