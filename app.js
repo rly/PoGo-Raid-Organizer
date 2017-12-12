@@ -45,7 +45,7 @@ const raidBotChannelName = "matinadesu-raid-bot";
 
 const richEmbedSelfName = 'RaidChannelBot';
 
-var approvedRareSpawnPokemon = ['Unown', 'Tyranitar', 'Blissey', 'Chansey', 'Dragonite', 'Ampharos', 'Machamp'];
+var approvedRareSpawnPokemon = ['Unown', 'Tyranitar', 'Blissey', 'Chansey', 'Dragonite', 'Ampharos', 'Machamp', 'Slaking'];
 
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
 var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar', 'mew', 'mewtwo', 'raiku', 'entei', 'suicune', 'ho-oh', 'celebi']; // lower case
