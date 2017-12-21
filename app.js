@@ -42,6 +42,7 @@ const huntrbotName = "HuntrBot";
 const raidBotName1 = "Raid";
 const raidBotName2 = "Egg";
 const raidBotChannelName = "matinadesu-raid-bot";
+const spawnPokeAlarmChannelName = "super-rare-spawns";
 
 const richEmbedSelfName = 'RaidChannelBot';
 
@@ -148,7 +149,7 @@ client.on("message", async message => {
           .catch(error => {
             console.log(`Error parsing ${message}`);
            });
-    } else {
+    } else if (message.channel.name === spawnPokeAlarmChannelName) {
       // parse Pokemon PokeAlarm spawn announcement
       await parsePokemonPokeAlarmMsg(message)
           .catch(error => {
@@ -972,6 +973,7 @@ async function parseHuntrbotMsg(lastBotMessage) {
   const titleMatch = new RegExp(/A wild (.*) \((\d+)\) has appeared!/).exec(emb.title);
   if (titleMatch && approvedRareSpawnPokemon.includes(titleMatch[1])) {
     lastBotMessage.channel.send(`@everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
+    console.log(`Adding to Huntrbot message: @everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
   } else if (!titleMatch) {
     console.log(`Could not parse Huntrbot message: ${emb.title}`);
   }
@@ -983,6 +985,7 @@ async function parsePokemonPokeAlarmMsg(lastBotMessage) {
   const titleMatch = new RegExp(/A wild (.*) has appeared!/).exec(emb.title);
   if (titleMatch && approvedRareSpawnPokemon.includes(titleMatch[1])) {
     lastBotMessage.channel.send(`@everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
+    console.log(`Adding to PokeAlarm message: @everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
   } else if (!titleMatch) {
     console.log(`Could not parse Huntrbot message: ${emb.title}`);
   }
