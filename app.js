@@ -45,7 +45,7 @@ const raidBotChannelName = "matinadesu-raid-bot";
 
 const richEmbedSelfName = 'RaidChannelBot';
 
-var approvedRareSpawnPokemon = ['Unown', 'Tyranitar', 'Blissey', 'Chansey', 'Dragonite', 'Ampharos', 'Machamp', 'Slaking'];
+var approvedRareSpawnPokemon = ['Unown', 'Tyranitar', 'Blissey', 'Dragonite', 'Ampharos', 'Slaking'];
 
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
 var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar', 'mew', 'mewtwo', 'raiku', 'entei', 'suicune', 'ho-oh', 'celebi']; // lower case
@@ -110,48 +110,51 @@ client.on("message", async message => {
   
   // if gymhuntrbot posts in the huntrbot channel, process it here
   const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
-  if (message.author.bot && message.author.id === gymHuntrbotId && message.embeds[0]) {
-    // parse GymHuntrBot raid announcement
-    const raidInfo = await parseGymHuntrbotMsg(message)
-    .then(raidInfo => {
-      // post enhanced raid info in channel
-      postRaidInfo(message.channel, raidInfo);
+  if (message.author.bot && message.embeds[0]) {
+    if (message.author.id === gymHuntrbotId) {
+      // parse GymHuntrBot raid announcement
+      const raidInfo = await parseGymHuntrbotMsg(message)
+      .then(raidInfo => {
+        // post enhanced raid info in channel
+        postRaidInfo(message.channel, raidInfo);
+        
+        if (isReplaceGymHuntrBotPost) {
+          // delete the original bot post
+          message.delete().catch(O_o=>{});
+        }
+      });
       
-      if (isReplaceGymHuntrBotPost) {
-        // delete the original bot post
-        message.delete().catch(O_o=>{});
+      if (isAutoRaidChannelOn) {
+        // only create a channel if the pokemon is approved
+        if (approvedPokemon.includes(raidInfo.pokemonName)) {
+          createRaidChannelAndPostInfo(message, raidInfo);
+        }
       }
-    });
-    
-    if (isAutoRaidChannelOn) {
-      // only create a channel if the pokemon is approved
-      if (approvedPokemon.includes(raidInfo.pokemonName)) {
-        createRaidChannelAndPostInfo(message, raidInfo);
-      }
+    } else if (message.author.username === raidBotName1 || message.author.username === raidBotName2) {
+      //if raid notification occurs, process it here parse raid announcement
+      const raidInfo = await parseRaidBotMsg(message)
+      .then(raidInfo => {
+        // post enhanced raid info in channel
+        postRaidInfo(message.channel, raidInfo);
+        
+        if (isReplaceRaidBotPost) {
+          // delete the original bot post
+          message.delete().catch(O_o=>{});
+        }
+      });
+    } else if (message.author.username === huntrbotName) {
+      // parse HuntrBot spawn announcement
+      await parseHuntrbotMsg(message)
+          .catch(error => {
+            console.log(`Error parsing ${message}`);
+           });
+    } else {
+      // parse Pokemon PokeAlarm spawn announcement
+      await parsePokemonPokeAlarmMsg(message)
+          .catch(error => {
+            console.log(`Error parsing ${message}`);
+           });
     }
-  }
-  
-  // if raid notification occurs, process it here
-  if (message.author.bot && (message.author.username === raidBotName1 || message.author.username === raidBotName2) && message.embeds[0]) {
-    // parse raid announcement
-    const raidInfo = await parseRaidBotMsg(message)
-    .then(raidInfo => {
-      // post enhanced raid info in channel
-      postRaidInfo(message.channel, raidInfo);
-      
-      if (isReplaceRaidBotPost) {
-        // delete the original bot post
-        message.delete().catch(O_o=>{});
-      }
-    });
-  }
-  
-  if (message.author.bot && message.author.username === huntrbotName && message.embeds[0]) {
-    // parse HuntrBot spawn announcement
-    await parseHuntrbotMsg(message)
-        .catch(error => {
-          console.log(`Error parsing ${message}`);
-         });
   }
   
   if (message.author.bot) return;
@@ -967,6 +970,17 @@ function parseRaidInfo(message) {
 async function parseHuntrbotMsg(lastBotMessage) {
   const emb = lastBotMessage.embeds[0];
   const titleMatch = new RegExp(/A wild (.*) \((\d+)\) has appeared!/).exec(emb.title);
+  if (titleMatch && approvedRareSpawnPokemon.includes(titleMatch[1])) {
+    lastBotMessage.channel.send(`@everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
+  } else if (!titleMatch) {
+    console.log(`Could not parse Huntrbot message: ${emb.title}`);
+  }
+}
+
+// process a PokeAlarm message
+async function parsePokemonPokeAlarmMsg(lastBotMessage) {
+  const emb = lastBotMessage.embeds[0];
+  const titleMatch = new RegExp(/A wild (.*) has appeared!/).exec(emb.title);
   if (titleMatch && approvedRareSpawnPokemon.includes(titleMatch[1])) {
     lastBotMessage.channel.send(`@everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
   } else if (!titleMatch) {
