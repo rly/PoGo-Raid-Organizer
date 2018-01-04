@@ -43,7 +43,7 @@ const raidBotName1 = "Raid";
 const raidBotName2 = "Egg";
 const raidBotChannelName = "matinadesu-raid-bot";
 const spawnPokeAlarmChannelName = "super-rare-spawns";
-const exRaidChannelName = "raid_channel_bot_ex_only";
+const exRaidChannelName = "all_raids_ex_only";
 
 const richEmbedSelfName = 'RaidChannelBot';
 
@@ -146,7 +146,8 @@ client.on("message", async message => {
         
         if (raidInfo.isExRaidEligible) {
           const exRaidChannel = message.guild.channels.find("name", exRaidChannelName);
-          postRaidInfo(exRaidChannel, raidInfo);
+          if (exRaidChannel)
+            postRaidInfo(exRaidChannel, raidInfo);
         }
       });
     } else if (message.author.username === huntrbotName) {
