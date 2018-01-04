@@ -43,6 +43,7 @@ const raidBotName1 = "Raid";
 const raidBotName2 = "Egg";
 const raidBotChannelName = "matinadesu-raid-bot";
 const spawnPokeAlarmChannelName = "super-rare-spawns";
+const exRaidChannelName = "raid_channel_bot_ex_only";
 
 const richEmbedSelfName = 'RaidChannelBot';
 
@@ -141,6 +142,11 @@ client.on("message", async message => {
         if (isReplaceRaidBotPost) {
           // delete the original bot post
           message.delete().catch(O_o=>{});
+        }
+        
+        if (raidInfo.isExRaidEligible) {
+          const exRaidChannel = message.guild.channels.find("name", exRaidChannelName);
+          postRaidInfo(exRaidChannel, raidInfo);
         }
       });
     } else if (message.author.username === huntrbotName) {
@@ -433,6 +439,23 @@ function findGymNameFromCoords(latitude, longitude, resolved) {
   });
 }
 
+// TODO see if async/await can be used here
+// requires exact match on double values
+function isGymExRaidEligible(latitude, longitude, resolved) {
+  return new Promise(resolved => {
+    db.all('SELECT exraid_eligible FROM gym where latitude=? and longitude=?', latitude, longitude, 
+      (err, rows) => {
+        if (err) {
+          console.log(`Database error finding raid: ${err}`);
+          resolved(null);
+        } else {
+          resolved(rows);
+        }
+      }
+    );
+  });
+}
+
 // continuously check raid channels for inactivity
 client.on('ready', (evt) => {
   /*for (let [key, ch] of client.channels) { // all channels in all servers
@@ -621,6 +644,15 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
   
   const parts = emb.description.split('\n'); // if raid, location name is parts[0], name is parts[1], time left is parts[3]
   
+  const gpsCoordsSplit = gpsCoords.split(',');
+  var isExRaidEligible = false;
+  const isExRaidEligibleResults = await isGymExRaidEligible(gpsCoordsSplit[0], gpsCoordsSplit[1]);
+  if (isExRaidEligibleResults != null && isExRaidEligibleResults.length == 1) {
+    isExRaidEligible = (isExRaidEligibleResults[0].exraid_eligible == 1);
+  } else {
+    console.log(`Could not find EX raid eligibility info for gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+  }
+  
   // clean up location name
   const loc = parts[0];
   const cleanLoc = loc.replace(/\*/g, '').slice(0, -1); // remove bold asterisks and trailing .
@@ -673,7 +705,8 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
     thumbUrl: thumbUrl, 
     gpsCoords: gpsCoords, 
     gmapsUrl: gmapsUrl,
-    gmapsLinkName: gmapsLinkName
+    gmapsLinkName: gmapsLinkName,
+    isExRaidEligible: isExRaidEligible
   }
 }
 
@@ -720,6 +753,14 @@ async function parseRaidBotMsg(lastBotMessage) {
       console.log(`More than one gym entry for coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
   } else {
     console.log(`Could not find a gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+  }
+  
+  var isExRaidEligible = false;
+  const isExRaidEligibleResults = await isGymExRaidEligible(gpsCoordsSplit[0], gpsCoordsSplit[1]);
+  if (isExRaidEligibleResults != null && isExRaidEligibleResults.length == 1) {
+    isExRaidEligible = (isExRaidEligibleResults[0].exraid_eligible == 1);
+  } else {
+    console.log(`Could not find EX raid eligibility info for gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
   }
   
   const cleanLoc = loc;
@@ -802,7 +843,8 @@ async function parseRaidBotMsg(lastBotMessage) {
     level: level,
     eggUrl: eggUrl,
     discussChannelID: discussChannelID,
-    discussChannelName: discussChannelName
+    discussChannelName: discussChannelName,
+    isExRaidEligible: isExRaidEligible
   }
 }
 
@@ -866,9 +908,14 @@ async function postRaidInfo(channel, raidInfo) {
     discussChannelStr = `\nDiscuss in: #${raidInfo.discussChannelName}`;
   }
   
+  var isExRaidEligibleStr = '';
+  if (raidInfo.isExRaidEligible) {
+    isExRaidEligibleStr = `\n**EX Raid Eligible**`;
+  }
+  
   const newEmbed = new Discord.RichEmbed()
     .setTitle(`${raidInfo.cleanLoc}`)
-    .setDescription(`**${raidInfo.pokemonName}**\n${raidInfo.timeStrHeader} **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining})\n${movesetStr}Map: **[${raidInfo.gmapsLinkName}](${raidInfo.gmapsUrl})**${discussChannelStr}`)
+    .setDescription(`**${raidInfo.pokemonName}**\n${raidInfo.timeStrHeader} **${raidInfo.raidTimeStrColon}** (${raidInfo.raidTimeRemaining})\n${movesetStr}Map: **[${raidInfo.gmapsLinkName}](${raidInfo.gmapsUrl})**${discussChannelStr}${isExRaidEligibleStr}`)
     .setThumbnail(`${raidInfo.thumbUrl}`)
     .setColor(embedColor)
     .setURL(`${raidInfo.gmapsUrl}`);
