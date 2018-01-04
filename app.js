@@ -911,7 +911,7 @@ async function postRaidInfo(channel, raidInfo) {
   
   var isExRaidEligibleStr = '';
   if (raidInfo.isExRaidEligible) {
-    isExRaidEligibleStr = `\n**EX Raid Eligible**`;
+    isExRaidEligibleStr = `\n**EX Raid Eligible Gym**`;
   }
   
   const newEmbed = new Discord.RichEmbed()
