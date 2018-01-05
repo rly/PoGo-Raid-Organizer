@@ -47,7 +47,7 @@ const exRaidChannelName = "all_raids_ex_only";
 
 const richEmbedSelfName = 'RaidChannelBot';
 
-var approvedRareSpawnPokemon = ['Unown', 'Tyranitar', 'Blissey', 'Ampharos', 'Slaking'];
+var approvedRareSpawnPokemon = ['Unown', 'Tyranitar', 'Blissey', 'Dragonite', 'Ampharos', 'Slaking'];
 
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
 var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar', 'mew', 'mewtwo', 'raiku', 'entei', 'suicune', 'ho-oh', 'celebi']; // lower case
@@ -109,6 +109,9 @@ client.on("guildDelete", guild => {
 
 client.on("message", async message => {
   // This event will run on every single message received, from any channel or DM.
+  
+  // skip self messages
+  if (message.author == client.user) return; 
   
   // if gymhuntrbot posts in the huntrbot channel, process it here
   const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
@@ -212,8 +215,8 @@ client.on("message", async message => {
     const deleteCount = parseInt(args[0], 10);
     
     // Ooooh nice, combined conditions. <3
-    if (!deleteCount || deleteCount < 2 || deleteCount > 100)
-      return message.reply("Please provide a number between 2 and 100 for the number of messages to delete");
+    if (!deleteCount || deleteCount < 2 || deleteCount > 500)
+      return message.reply("Please provide a number between 2 and 500 for the number of messages to delete");
     
     // delete the specified number of messages, newest first. 
     message.channel.bulkDelete(deleteCount)
@@ -1034,7 +1037,7 @@ async function parsePokemonPokeAlarmMsg(lastBotMessage) {
   const gpsCoordsMatch = new RegExp('http://maps\\.google\\.com/maps\\?q=(.*)').exec(emb.url);
   if (titleMatch && approvedRareSpawnPokemon.includes(titleMatch[1]) && gpsCoordsMatch && gpsCoordsMatch[1]) {
     const newEmbed = new Discord.RichEmbed()
-      .setTitle(`${emb.title}`)
+      .setTitle(`See above: ${emb.title}`)
       .setColor(embedColor)
       .setURL(`${emb.url}`)
       .setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${gpsCoordsMatch[1]}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${gpsCoordsMatch[1]}`);
