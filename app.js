@@ -1031,7 +1031,14 @@ async function parseHuntrbotMsg(lastBotMessage) {
 async function parsePokemonPokeAlarmMsg(lastBotMessage) {
   const emb = lastBotMessage.embeds[0];
   const titleMatch = new RegExp(/(.*)!/).exec(emb.title);
-  if (titleMatch && approvedRareSpawnPokemon.includes(titleMatch[1])) {
+  const gpsCoordsMatch = new RegExp('http://maps\\.google\\.com/maps\\?q=(.*)').exec(emb.url);
+  if (titleMatch && approvedRareSpawnPokemon.includes(titleMatch[1]) && gpsCoordsMatch && gpsCoordsMatch[1]) {
+    const newEmbed = new Discord.RichEmbed()
+      .setTitle(`${emb.title}`)
+      .setColor(embedColor)
+      .setURL(`${emb.url}`)
+      .setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${gpsCoordsMatch[1]}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${gpsCoordsMatch[1]}`);
+    lastBotMessage.channel.send({embed: newEmbed});
     lastBotMessage.channel.send(`@everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
     console.log(`Adding to PokeAlarm message: @everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
   } else if (!titleMatch) {
