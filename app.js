@@ -215,8 +215,8 @@ client.on("message", async message => {
     const deleteCount = parseInt(args[0], 10);
     
     // Ooooh nice, combined conditions. <3
-    if (!deleteCount || deleteCount < 2 || deleteCount > 500)
-      return message.reply("Please provide a number between 2 and 500 for the number of messages to delete");
+    if (!deleteCount || deleteCount < 2 || deleteCount > 100)
+      return message.reply("Please provide a number between 2 and 100 for the number of messages to delete");
     
     // delete the specified number of messages, newest first. 
     message.channel.bulkDelete(deleteCount)
