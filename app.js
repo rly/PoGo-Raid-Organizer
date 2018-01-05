@@ -650,11 +650,13 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
   
   const gpsCoordsSplit = gpsCoords.split(',');
   var isExRaidEligible = false;
-  const isExRaidEligibleResults = await isGymExRaidEligible(gpsCoordsSplit[0], gpsCoordsSplit[1]);
-  if (isExRaidEligibleResults != null && isExRaidEligibleResults.length == 1) {
-    isExRaidEligible = (isExRaidEligibleResults[0].exraid_eligible == 1);
-  } else {
-    console.log(`Could not find EX raid eligibility info for gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+  if (gpsCoordsSplit && gpsCoordsSplit.length >= 2) {
+    const isExRaidEligibleResults = await isGymExRaidEligible(gpsCoordsSplit[0], gpsCoordsSplit[1]);
+    if (isExRaidEligibleResults != null && isExRaidEligibleResults.length == 1) {
+      isExRaidEligible = (isExRaidEligibleResults[0].exraid_eligible == 1);
+    } else {
+      console.log(`Could not find EX raid eligibility info for gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+    }
   }
   
   // clean up location name
@@ -749,22 +751,24 @@ async function parseRaidBotMsg(lastBotMessage) {
   // clean up location name
   var loc = 'Unknown Gym Name';
   const gpsCoordsSplit = gpsCoords.split(',');
-  const gymResults = await findGymNameFromCoords(gpsCoordsSplit[0], gpsCoordsSplit[1]);
-  if (gymResults != null && gymResults.length > 0) {
-    if (gymResults.length == 1) {
-      loc = gymResults[0].name;
-    } else
-      console.log(`More than one gym entry for coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
-  } else {
-    console.log(`Could not find a gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
-  }
-  
-  var isExRaidEligible = false;
-  const isExRaidEligibleResults = await isGymExRaidEligible(gpsCoordsSplit[0], gpsCoordsSplit[1]);
-  if (isExRaidEligibleResults != null && isExRaidEligibleResults.length == 1) {
-    isExRaidEligible = (isExRaidEligibleResults[0].exraid_eligible == 1);
-  } else {
-    console.log(`Could not find EX raid eligibility info for gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+  if (gpsCoordsSplit && gpsCoordsSplit.length >= 2) {
+    const gymResults = await findGymNameFromCoords(gpsCoordsSplit[0], gpsCoordsSplit[1]);
+    if (gymResults != null && gymResults.length > 0) {
+      if (gymResults.length == 1) {
+        loc = gymResults[0].name;
+      } else
+        console.log(`More than one gym entry for coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+    } else {
+      console.log(`Could not find a gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+    }
+    
+    var isExRaidEligible = false;
+    const isExRaidEligibleResults = await isGymExRaidEligible(gpsCoordsSplit[0], gpsCoordsSplit[1]);
+    if (isExRaidEligibleResults != null && isExRaidEligibleResults.length == 1) {
+      isExRaidEligible = (isExRaidEligibleResults[0].exraid_eligible == 1);
+    } else {
+      console.log(`Could not find EX raid eligibility info for gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+    }
   }
   
   const cleanLoc = loc;
