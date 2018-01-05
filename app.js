@@ -1030,7 +1030,7 @@ async function parseHuntrbotMsg(lastBotMessage) {
 // process a PokeAlarm message
 async function parsePokemonPokeAlarmMsg(lastBotMessage) {
   const emb = lastBotMessage.embeds[0];
-  const titleMatch = new RegExp(/A wild (.*) has appeared!/).exec(emb.title);
+  const titleMatch = new RegExp(/(.*)!/).exec(emb.title);
   if (titleMatch && approvedRareSpawnPokemon.includes(titleMatch[1])) {
     lastBotMessage.channel.send(`@everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
     console.log(`Adding to PokeAlarm message: @everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
