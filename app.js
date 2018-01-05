@@ -1037,7 +1037,7 @@ async function parsePokemonPokeAlarmMsg(lastBotMessage) {
   const gpsCoordsMatch = new RegExp('http://maps\\.google\\.com/maps\\?q=(.*)').exec(emb.url);
   if (titleMatch && approvedRareSpawnPokemon.includes(titleMatch[1]) && gpsCoordsMatch && gpsCoordsMatch[1]) {
     const newEmbed = new Discord.RichEmbed()
-      .setTitle(`See above: ${emb.title}`)
+      .setTitle(`Map for the above: ${emb.title}`)
       .setColor(embedColor)
       .setURL(`${emb.url}`)
       .setImage(`https://maps.googleapis.com/maps/api/staticmap?center=${gpsCoordsMatch[1]}&zoom=15&scale=1&size=600x600&maptype=roadmap&key=${config.gmapsApiKey}&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:%7C${gpsCoordsMatch[1]}`);
