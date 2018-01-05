@@ -1035,7 +1035,7 @@ async function parsePokemonPokeAlarmMsg(lastBotMessage) {
   const emb = lastBotMessage.embeds[0];
   const titleMatch = new RegExp(/(.*)!/).exec(emb.title);
   const gpsCoordsMatch = new RegExp('http://maps\\.google\\.com/maps\\?q=(.*)').exec(emb.url);
-  if (titleMatch && approvedRareSpawnPokemon.includes(titleMatch[1]) && gpsCoordsMatch && gpsCoordsMatch[1]) {
+  if (titleMatch && titleMatch[1] && approvedRareSpawnPokemon.includes(titleMatch[1]) && gpsCoordsMatch && gpsCoordsMatch[1]) {
     const newEmbed = new Discord.RichEmbed()
       .setTitle(`Map for the above: ${emb.title}`)
       .setColor(embedColor)
