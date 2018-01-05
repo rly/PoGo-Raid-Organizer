@@ -47,7 +47,7 @@ const exRaidChannelName = "all_raids_ex_only";
 
 const richEmbedSelfName = 'RaidChannelBot';
 
-var approvedRareSpawnPokemon = ['Unown', 'Tyranitar', 'Blissey', 'Dragonite', 'Ampharos', 'Slaking'];
+var approvedRareSpawnPokemon = ['Unown', 'Tyranitar', 'Blissey', 'Ampharos', 'Slaking'];
 
 // note that the approved pokemon list is not stored in a database and resets whenever the bot restarts
 var approvedPokemon = ['lugia', 'articuno', 'zapdos', 'moltres', 'tyranitar', 'mew', 'mewtwo', 'raiku', 'entei', 'suicune', 'ho-oh', 'celebi']; // lower case
