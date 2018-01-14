@@ -4,7 +4,7 @@ var Service = require('node-windows').Service;
 var svc = new Service({
   name: 'PoGo Raid Organizer',
   description: 'PoGo Raid Organizer web server.',
-  script: 'D:\\Documents\\PoGo-Raid-Organizer-dev\\app.js',
+  script: config.path,
   nodeOptions: []
 });
 
