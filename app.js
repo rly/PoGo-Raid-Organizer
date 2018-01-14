@@ -13,6 +13,12 @@ const sqlite3 = require("sqlite3").verbose();
 // Load sqlite file of gym info generated elsewhere (requires columns "name", "latitude", "longitude"
 const db = new sqlite3.Database('gymdetails');
 
+// node windows event logger
+var EventLogger = require('node-windows').EventLogger;
+
+// start a new logger
+var log = new EventLogger('PoGo Raid Organizer');
+
 // Create the main client object with methods to interface with Discord
 const client = new Discord.Client();
 
@@ -643,6 +649,7 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
     })
     .catch(error => {
        console.log(`Google Maps reverse geocoding failed for coordinates ${gpsCoords}. Error: ${error}`);
+       log.info(`Google Maps reverse geocoding failed for coordinates ${gpsCoords}. Error: ${error}`);
        return 'Open in Google Maps';
     });
   
@@ -656,6 +663,7 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
       isExRaidEligible = (isExRaidEligibleResults[0].exraid_eligible == 1);
     } else {
       console.log(`Could not find EX raid eligibility info for gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+      log.info(`Could not find EX raid eligibility info for gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
     }
   }
   
@@ -745,6 +753,7 @@ async function parseRaidBotMsg(lastBotMessage) {
     })
     .catch(error => {
        console.log(`Google Maps reverse geocoding failed for coordinates ${gpsCoords}. Error: ${error}`);
+       log.info(`Google Maps reverse geocoding failed for coordinates ${gpsCoords}. Error: ${error}`);
        return 'Open in Google Maps';
     });
   
@@ -758,8 +767,10 @@ async function parseRaidBotMsg(lastBotMessage) {
         loc = gymResults[0].name;
       } else
         console.log(`More than one gym entry for coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+        log.info(`More than one gym entry for coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
     } else {
       console.log(`Could not find a gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+      log.info(`Could not find a gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
     }
     
     var isExRaidEligible = false;
@@ -768,6 +779,7 @@ async function parseRaidBotMsg(lastBotMessage) {
       isExRaidEligible = (isExRaidEligibleResults[0].exraid_eligible == 1);
     } else {
       console.log(`Could not find EX raid eligibility info for gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+      log.info(`Could not find EX raid eligibility info for gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
     }
   }
   
@@ -1029,8 +1041,10 @@ async function parseHuntrbotMsg(lastBotMessage) {
   if (titleMatch && approvedRareSpawnPokemon.includes(titleMatch[1])) {
     lastBotMessage.channel.send(`@everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
     console.log(`Adding to Huntrbot message: @everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
+    log.info(`Adding to Huntrbot message: @everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
   } else if (!titleMatch) {
     console.log(`Could not parse Huntrbot message: ${emb.title}`);
+    log.info(`Could not parse Huntrbot message: ${emb.title}`);
   }
 }
 
@@ -1048,12 +1062,21 @@ async function parsePokemonPokeAlarmMsg(lastBotMessage) {
     lastBotMessage.channel.send({embed: newEmbed});
     lastBotMessage.channel.send(`@everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
     console.log(`Adding to PokeAlarm message: @everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
+    log.info(`Adding to PokeAlarm message: @everyone A wild ${titleMatch[1]} has appeared in the area! See above.`);
   } else if (!titleMatch) {
     console.log(`Could not parse Huntrbot message: ${emb.title}`);
+    log.info(`Could not parse Huntrbot message: ${emb.title}`);
   }
 }
 
 db.on("error", error => console.log("Database error: ", error));
+
+process.on('uncaughtException', function(err) {
+  log("uncaughtException");
+  console.error(err.stack);
+  log.error(err.stack);
+  process.exit();
+});
 
 process.on('SIGINT', () => {
   db.close();
