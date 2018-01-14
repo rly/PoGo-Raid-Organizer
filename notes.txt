@@ -1,0 +1,12 @@
+This app uses node-windows (https://github.com/coreybutler/node-windows) which creates a Windows service for running the bot. Configuration is in config.json.
+
+To install the service:
+node install-windows-service.js
+
+To uninstall the service:
+node uninstall-windows-service.js
+
+The app should still run using:
+node app.js
+
+As a service, the app sends log information to the Windows Event Viewer. You can control the service (start/stop/restart) in the Windows Services menu.
