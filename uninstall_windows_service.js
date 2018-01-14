@@ -4,7 +4,7 @@ const config = require("./config.json");
 
 // Create a new service object
 var svc = new Service({
-  name: 'PoGo Raid Organizer',
+  name: config.name,
   description: 'PoGo Raid Organizer web server.',
   script: config.path,
   nodeOptions: []
