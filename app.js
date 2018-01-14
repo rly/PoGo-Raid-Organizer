@@ -765,9 +765,10 @@ async function parseRaidBotMsg(lastBotMessage) {
     if (gymResults != null && gymResults.length > 0) {
       if (gymResults.length == 1) {
         loc = gymResults[0].name;
-      } else
+      } else {
         console.log(`More than one gym entry for coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
         log.info(`More than one gym entry for coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
+      }
     } else {
       console.log(`Could not find a gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
       log.info(`Could not find a gym with coords: ${gpsCoordsSplit[0]},${gpsCoordsSplit[1]}`);
