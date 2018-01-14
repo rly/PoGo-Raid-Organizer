@@ -1,5 +1,7 @@
 var Service = require('node-windows').Service;
 
+const config = require("./config.json");
+
 // Create a new service object
 var svc = new Service({
   name: 'PoGo Raid Organizer',
