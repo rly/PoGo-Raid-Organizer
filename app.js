@@ -156,7 +156,7 @@ client.on("message", async message => {
           if (raidInfo.isExRaidEligible) {
             const exRaidChannel = message.guild.channels.find("name", exRaidChannelName);
             if (exRaidChannel) {
-              setTimeout(postRaidInfo(exRaidChannel, raidInfo), 1000);
+              setTimeout(function() {postRaidInfo(exRaidChannel, raidInfo)}, 1000);
             }
           }
         }), 1000);
