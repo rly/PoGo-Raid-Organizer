@@ -146,20 +146,21 @@ client.on("message", async message => {
       const raidInfo = await parseRaidBotMsg(message)
       .then(raidInfo => {
         // post enhanced raid info in channel
-        setTimeout(postRaidInfo(message.channel, raidInfo)
-        .then(() => {
-          if (isReplaceRaidBotPost) {
-            // delete the original bot post
-            message.delete().catch(O_o=>{});
-          }
-          
-          if (raidInfo.isExRaidEligible) {
-            const exRaidChannel = message.guild.channels.find("name", exRaidChannelName);
-            if (exRaidChannel) {
-              setTimeout(function() {postRaidInfo(exRaidChannel, raidInfo)}, 1000);
+        setTimeout(function() {
+          postRaidInfo(message.channel, raidInfo)
+          .then(() => {
+            if (isReplaceRaidBotPost) {
+              // delete the original bot post
+              message.delete().catch(O_o=>{});
             }
-          }
-        }), 1000);
+            
+            if (raidInfo.isExRaidEligible) {
+              const exRaidChannel = message.guild.channels.find("name", exRaidChannelName);
+              if (exRaidChannel) {
+                setTimeout(function() {postRaidInfo(exRaidChannel, raidInfo)}, 1000);
+              }
+            }
+        })}, 1000);
       });
     } else if (message.author.username === huntrbotName) {
       // parse HuntrBot spawn announcement
