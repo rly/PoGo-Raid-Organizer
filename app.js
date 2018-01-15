@@ -146,18 +146,20 @@ client.on("message", async message => {
       const raidInfo = await parseRaidBotMsg(message)
       .then(raidInfo => {
         // post enhanced raid info in channel
-        postRaidInfo(message.channel, raidInfo);
-        
-        if (isReplaceRaidBotPost) {
-          // delete the original bot post
-          message.delete().catch(O_o=>{});
-        }
-        
-        if (raidInfo.isExRaidEligible) {
-          const exRaidChannel = message.guild.channels.find("name", exRaidChannelName);
-          if (exRaidChannel)
-            postRaidInfo(exRaidChannel, raidInfo);
-        }
+        setTimeout(postRaidInfo(message.channel, raidInfo)
+        .then(() => {
+          if (isReplaceRaidBotPost) {
+            // delete the original bot post
+            message.delete().catch(O_o=>{});
+          }
+          
+          if (raidInfo.isExRaidEligible) {
+            const exRaidChannel = message.guild.channels.find("name", exRaidChannelName);
+            if (exRaidChannel) {
+              setTimeout(postRaidInfo(exRaidChannel, raidInfo), 1000);
+            }
+          }
+        }), 1000);
       });
     } else if (message.author.username === huntrbotName) {
       // parse HuntrBot spawn announcement
@@ -1073,7 +1075,7 @@ async function parsePokemonPokeAlarmMsg(lastBotMessage) {
 db.on("error", error => console.log("Database error: ", error));
 
 process.on('uncaughtException', function(err) {
-  log("uncaughtException");
+  console.log("uncaughtException");
   console.error(err.stack);
   log.error(err.stack);
   process.exit();
