@@ -7,7 +7,9 @@ var svc = new Service({
   name: config.name,
   description: 'PoGo Raid Organizer web server.',
   script: config.path,
-  nodeOptions: []
+  nodeOptions: [],
+  wait: 60,
+  maxRestarts: 20
 });
 
 // Listen for the "install" event, which indicates the
