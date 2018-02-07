@@ -120,6 +120,9 @@ client.on("message", async message => {
   // skip self messages
   if (message.author == client.user) return; 
   
+  console.log(message);
+  console.log(raidChannelNames.includes(message.channel.name));
+  
   // if gymhuntrbot posts in the huntrbot channel, process it here
   const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
   if (message.author.bot && message.embeds[0]) {
@@ -142,7 +145,7 @@ client.on("message", async message => {
           createRaidChannelAndPostInfo(message, raidInfo);
         }
       }
-    } else if (raidChannelNames.includes(message.channel.name)) {
+    } else if (message.author.bot && raidChannelNames.includes(message.channel.name)) {
       //if raid notification occurs, process it here parse raid announcement
       const raidInfo = await parseRaidBotMsg(message)
       .then(raidInfo => {
