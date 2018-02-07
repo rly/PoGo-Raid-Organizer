@@ -50,6 +50,7 @@ const raidBotName2 = "Egg"; // check for match
 const raidBotChannelName = "matinadesu-raid-bot";
 const spawnPokeAlarmChannelName = "super-rare-spawns";
 const exRaidChannelName = "all_raids_ex_only";
+const raidChannelNames = ['raid_channel_bot', 'all-raids', 'all_raids_ex_only'];
 
 const richEmbedSelfName = 'RaidChannelBot';
 
@@ -141,7 +142,7 @@ client.on("message", async message => {
           createRaidChannelAndPostInfo(message, raidInfo);
         }
       }
-    } else if (message.author.username.includes(raidBotName1) || message.author.username === raidBotName2) {
+    } else if (raidChannelNames.includes(message.channel.name)) {
       //if raid notification occurs, process it here parse raid announcement
       const raidInfo = await parseRaidBotMsg(message)
       .then(raidInfo => {
