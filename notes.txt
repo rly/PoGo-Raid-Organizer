@@ -10,3 +10,7 @@ The app should still run using:
 node app.js
 
 As a service, the app sends log information to the Windows Event Viewer. You can control the service (start/stop/restart) in the Windows Services menu.
+
+Use the Task Scheduler to restart the service every hour on the hour, in case of locks or other problems.
+https://stackoverflow.com/questions/36309449/how-to-restart-a-windows-service-using-task-scheduler
+
