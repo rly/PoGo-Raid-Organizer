@@ -120,8 +120,8 @@ client.on("message", async message => {
   // skip self messages
   if (message.author == client.user) return; 
   
-  console.log(message);
-  console.log(raidChannelNames.includes(message.channel.name));
+  log.info(message);
+  log.info(raidChannelNames.includes(message.channel.name));
   
   // if gymhuntrbot posts in the huntrbot channel, process it here
   const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
@@ -734,7 +734,7 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
 // process a Raid bot message
 async function parseRaidBotMsg(lastBotMessage) {
   const emb = lastBotMessage.embeds[0];
-  console.log(emb);
+  log.info(emb);
   
   // get the pokemon thumbnail
   var thumbUrl = emb.thumbnail.url;
@@ -799,10 +799,10 @@ async function parseRaidBotMsg(lastBotMessage) {
   }
   shortLoc = shortLoc.substring(0, maxLocNameLength);
   shortLoc = shortLoc.replace(/-/g, ' ').trim().replace(/\s/g, '-'); // trim trailing -
-  console.log(shortLoc);
+  log.info(shortLoc);
   
   const parts = emb.description.split('\n'); 
-  console.log(parts);
+  log.info(parts);
   var pokemonName, shortPokemonName, timeRegex, timeStrHeader, level, eggUrl, moveset;
   // check for egg vs raid
   const titleEggMatch = new RegExp(/A Level (\d) raid is incoming!/).exec(emb.title);
