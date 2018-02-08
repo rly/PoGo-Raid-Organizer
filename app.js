@@ -759,7 +759,6 @@ async function parseGymHuntrbotMsg(lastBotMessage) {
 // process a Raid bot message
 async function parseRaidBotMsg(lastBotMessage) {
   const emb = lastBotMessage.embeds[0];
-  console.log(emb);
   
   // get the pokemon thumbnail
   var thumbUrl = emb.thumbnail.url;
@@ -824,10 +823,9 @@ async function parseRaidBotMsg(lastBotMessage) {
   }
   shortLoc = shortLoc.substring(0, maxLocNameLength);
   shortLoc = shortLoc.replace(/-/g, ' ').trim().replace(/\s/g, '-'); // trim trailing -
-  console.log(shortLoc);
   
   const parts = emb.description.split('\n'); 
-  console.log(parts);
+  
   var pokemonName, shortPokemonName, timeRegex, timeStrHeader, level, eggUrl, moveset;
   // check for egg vs raid
   const titleEggMatch = new RegExp(/A Level (\d) raid is incoming!/).exec(emb.title);
