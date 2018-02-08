@@ -120,9 +120,6 @@ client.on("message", async message => {
   // skip self messages
   if (message.author == client.user) return; 
   
-  console.log(message);
-  console.log(raidChannelNames.includes(message.channel.name));
-  
   // if gymhuntrbot posts in the huntrbot channel, process it here
   const gymHuntrbotId = client.users.find('username', gymHuntrbotName).id; // user id (global)
   if (message.author.bot && message.embeds[0]) {
@@ -201,6 +198,10 @@ client.on("message", async message => {
   // args = ["Is", "this", "the", "real", "life?"]
   const args = content.split(/\s+/g);
   const command = args.shift().slice(config.prefix.length).toLowerCase();
+  
+  if (command === "testing") {
+    testing(message.channel);
+  }
     
   if (command === "ping") {
     // Calculates ping between sending a message and editing it, giving a nice round-trip latency.
@@ -473,10 +474,33 @@ function isGymExRaidEligible(latitude, longitude, resolved) {
   });
 }
 
+async function testing(channel) {
+  channel.fetchMessages({limit: 5})
+  .then(messages => {
+    messages.forEach(message => {
+      if (message.author.bot && raidChannelNames.includes(message.channel.name) && message.embeds[0]) {
+        const raidInfo = parseRaidBotMsg(message)
+        .then(raidInfo => {
+          // post enhanced raid info in channel
+          setTimeout(function() {
+            postRaidInfo(message.channel, raidInfo)
+            .then(() => {
+              if (isReplaceRaidBotPost) {
+                // delete the original bot post
+                message.delete().catch(O_o=>{});
+              }
+            })
+          }, 1000);
+        });
+      }
+    });
+  });
+}
+
 // continuously check raid channels for inactivity
 client.on('ready', (evt) => {
   /*for (let [key, ch] of client.channels) { // all channels in all servers
-    if (ch.type === 'text') {
+    if (false) {
       ch.fetchMessages({limit: 10})
       .then(messages => {
         messages.forEach(message => {
@@ -495,7 +519,8 @@ client.on('ready', (evt) => {
         });
       });
     }
-  }
+  }*/
+  /*
   
   for (let [key, ch] of client.channels) { // all channels in all servers
     if (ch.type === 'text') {
@@ -816,7 +841,7 @@ async function parseRaidBotMsg(lastBotMessage) {
     
   } else {
     // extract the pokemon name
-    const titleParts = new RegExp(/^Level (\d) Raid against (.*)!/g).exec(emb.title);
+    const titleParts = new RegExp(/^Level (\d) raid against (.*)!/g).exec(emb.title);
     level = titleParts[1];
     eggUrl = `https://raw.githubusercontent.com/kvangent/PokeAlarm/master/icons/egg_${level}.png`;
     pokemonName = titleParts[2];
