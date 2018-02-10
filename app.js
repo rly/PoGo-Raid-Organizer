@@ -157,6 +157,7 @@ client.on("message", async message => {
             
             if (raidInfo.isExRaidEligible) {
               const exRaidChannel = message.guild.channels.find("name", exRaidChannelName);
+              log.info("Found ex raid channel for posting ex raid eligible raid");
               if (exRaidChannel) {
                 setTimeout(function() {postRaidInfo(exRaidChannel, raidInfo)}, 1000);
               }
